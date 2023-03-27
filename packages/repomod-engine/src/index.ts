@@ -1,43 +1,36 @@
 type Options = Readonly<Record<string, string | undefined>>;
 
-export type CreateFileCommand = Readonly<{
-  kind: "createFile";
-  path: string;
-  options: Options;
-}>;
+export interface UpsertFileCommand {
+  readonly kind: "upsertFile";
+  readonly path: string;
+  readonly options: Options;
+}
 
-export type DeleteFileCommand = Readonly<{
-  kind: "deleteFile";
-  path: string;
-  options: Options;
-}>;
+export interface DeleteFileCommand {
+  readonly kind: "deleteFile";
+  readonly path: string;
+  readonly options: Options;
+}
 
-export type MoveFileCommand = Readonly<{
-  kind: "moveFile";
-  oldPath: string;
-  newPath: string;
-  options: Options;
-}>;
+export interface MoveFileCommand {
+  readonly kind: "moveFile";
+  readonly oldPath: string;
+  readonly newPath: string;
+  readonly options: Options;
+}
 
-export type CopyFileCommand = Readonly<{
-  kind: "copyFile";
-  oldPath: string;
-  newPath: string;
-  options: Options;
-}>;
-
-export type HandleDataCommand = Readonly<{
-  kind: "handleData";
-  path: string;
-  options: Options;
-}>;
+export interface CopyFileCommand {
+  readonly kind: "copyFile";
+  readonly oldPath: string;
+  readonly newPath: string;
+  readonly options: Options;
+}
 
 export type FileCommand =
-  | CreateFileCommand
+  | UpsertFileCommand
   | DeleteFileCommand
   | MoveFileCommand
-  | CopyFileCommand
-  | HandleDataCommand;
+  | CopyFileCommand;
 
 export type HandleDirectoryCommand = Readonly<{
   kind: "handleDirectory";
@@ -95,18 +88,18 @@ interface DataAPI extends PathAPI {
   getHTMLParser2(): { parseDocument: typeof parseDocument };
 }
 
-interface Handler {
-  handleDirectory?: (
+export interface Repomod {
+  readonly handleDirectory?: (
     api: DirectoryAPI,
     path: string,
     options: Options
   ) => Promise<ReadonlyArray<DirectoryCommand>>;
-  handleFile?: (
+  readonly handleFile?: (
     api: FileAPI,
     path: string,
     options: Options
   ) => Promise<ReadonlyArray<FileCommand>>;
-  handleData?: (
+  readonly handleData?: (
     api: DataAPI,
     path: string,
     data: string,
