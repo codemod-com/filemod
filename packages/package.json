@@ -1,0 +1,31 @@
+{
+    "name": "@intuita-inc/repomod-engine",
+    "version": "1.0.0",
+    "description": "",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "files": [
+        "./dist",
+        "LICENSE",
+        "README.md",
+        "tsconfig.json"
+    ],
+    "bin": {
+        "repomod-engine": "./dist/index.js"
+    },
+    "scripts": {
+        "build": "tsc"
+    },
+    "keywords": [],
+    "author": "Caartaa, Inc.",
+    "dependencies": {
+        "@types/glob": "8.0.1",
+        "glob": "8.1.0",
+        "memfs": "3.4.13",
+        "ts-node": "^10.9.1"
+    },
+    "devDependencies": {
+        "@vercel/ncc": "^0.36.0"
+    },
+    "license": "Apache License, Version 2.0"
+}
