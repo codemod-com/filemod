@@ -32,17 +32,17 @@ export type FileCommand =
   | MoveFileCommand
   | CopyFileCommand;
 
-export type HandleDirectoryCommand = Readonly<{
-  kind: "handleDirectory";
-  path: string;
-  options: Options;
-}>;
+export interface HandleDirectoryCommand {
+  readonly kind: "handleDirectory";
+  readonly path: string;
+  readonly options: Options;
+}
 
-export type HandleFileCommand = Readonly<{
-  kind: "handleFile";
-  path: string;
-  options: Options;
-}>;
+export interface HandleFileCommand {
+  readonly kind: "handleFile";
+  readonly path: string;
+  readonly options: Options;
+}
 
 export type DirectoryCommand = HandleDirectoryCommand | HandleFileCommand;
 
