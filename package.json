@@ -1,14 +1,17 @@
 {
-  "name": "repomod-engine",
+  "name": "repomod-engine-monorepo",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "lint:eslint:check": "eslint . --no-color",
+    "lint:prettier:check": "prettier . --check --no-color ",
+    "lint:eslint:write": "eslint . --fix",
+    "lint:prettier:write": "prettier --write .",
+    "test": "turbo test"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Caartaa, Inc.",
   "devDependencies": {
     "@types/node": "^18.15.10",
     "@typescript-eslint/eslint-plugin": "^5.56.0",
