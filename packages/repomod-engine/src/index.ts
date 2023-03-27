@@ -46,20 +46,29 @@ export interface HandleFileCommand {
 
 export type DirectoryCommand = HandleDirectoryCommand | HandleFileCommand;
 
-export type DataCommand =
-  | Readonly<{
-      kind: "upsertData";
-      data: string;
-    }>
-  | Readonly<{ kind: "noop" }>;
-
-interface PathAPI {
-  getDirname(path: string): string; // might throw
-  getBasename(path: string): string; // might throw
-  joinPaths(...paths: string[]): string; // might throw
+export interface ExportDataCommand {
+  readonly kind: "upsertData";
+  readonly data: string;
 }
 
-interface FileAPI extends PathAPI {
+export interface NoopCommand {
+  readonly kind: "noop";
+}
+
+export type DataCommand = ExportDataCommand | NoopCommand;
+
+export interface PathAPI {
+  readonly getDirname: (path: string) => string; // might throw
+  readonly getBasename: (path: string) => string; // might throw
+  readonly joinPaths: (...paths: string[]) => string; // might throw
+}
+
+interface DataAPI extends PathAPI {
+  getJSCodeshift(): JSCodeshift;
+  getHTMLParser2(): { parseDocument: typeof parseDocument };
+}
+
+interface FileAPI extends PathAPI, DataAPI {
   // patterns and paths
   readonly includePatterns: ReadonlyArray<string>;
   readonly excludePatterns: ReadonlyArray<string>;
@@ -68,7 +77,6 @@ interface FileAPI extends PathAPI {
   readonly exists: (path: string) => Promise<boolean>;
 
   // reading directories and files
-
   readonly readFile: (filePath: string) => Promise<string>; // might throw
 }
 
@@ -81,11 +89,6 @@ interface DirectoryAPI extends FileAPI {
     includePatterns: ReadonlyArray<string>,
     excludePatterns: ReadonlyArray<string>
   ) => Promise<ReadonlyArray<string>>;
-}
-
-interface DataAPI extends PathAPI {
-  getJSCodeshift(): JSCodeshift;
-  getHTMLParser2(): { parseDocument: typeof parseDocument };
 }
 
 export interface Repomod {
