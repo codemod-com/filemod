@@ -1,3 +1,6 @@
+import * as fs from "node:fs";
+import * as fsPromises from "node:fs/promises";
+
 type Options = Readonly<Record<string, string | undefined>>;
 
 export interface UpsertFileCommand {
@@ -63,12 +66,11 @@ export interface PathAPI {
   readonly joinPaths: (...paths: string[]) => string; // might throw
 }
 
-interface DataAPI extends PathAPI {
-  getJSCodeshift(): JSCodeshift;
-  getHTMLParser2(): { parseDocument: typeof parseDocument };
+interface DataAPI<D> extends PathAPI {
+  getDependencies: () => D;
 }
 
-interface FileAPI extends PathAPI, DataAPI {
+interface FileAPI<D> extends PathAPI, DataAPI<D> {
   // patterns and paths
   readonly includePatterns: ReadonlyArray<string>;
   readonly excludePatterns: ReadonlyArray<string>;
@@ -80,7 +82,7 @@ interface FileAPI extends PathAPI, DataAPI {
   readonly readFile: (filePath: string) => Promise<string>; // might throw
 }
 
-interface DirectoryAPI extends FileAPI {
+interface DirectoryAPI<D> extends FileAPI<D> {
   readonly readDirectory: (
     directoryPath: string
   ) => Promise<ReadonlyArray<string>>; // might throw
@@ -91,30 +93,87 @@ interface DirectoryAPI extends FileAPI {
   ) => Promise<ReadonlyArray<string>>;
 }
 
-export interface Repomod {
+export interface Repomod<D> {
   readonly handleDirectory?: (
-    api: DirectoryAPI,
+    api: DirectoryAPI<D>,
     path: string,
     options: Options
   ) => Promise<ReadonlyArray<DirectoryCommand>>;
   readonly handleFile?: (
-    api: FileAPI,
+    api: FileAPI<D>,
     path: string,
     options: Options
   ) => Promise<ReadonlyArray<FileCommand>>;
   readonly handleData?: (
-    api: DataAPI,
+    api: DataAPI<D>,
     path: string,
     data: string,
     options: Options
   ) => Promise<DataCommand>;
 }
 
-// export const executeRepomod = (
-//   api: API,
-//   repomod: Repomod,
-//   rootPath: string,
-//   options: Options
-// ) => {
+export interface API<D> {
+  fileSystem: typeof fs;
+  promisifiedFileSystem: typeof fsPromises;
+  directoryAPI: DirectoryAPI<D>;
+  fileAPI: FileAPI<D>;
+}
 
-// };
+const defaultHandleDirectory: Repomod<any>["handleDirectory"] = async (
+  api,
+  directoryPath,
+  options
+) => {
+  const filePaths = await api.getFilePaths(
+    directoryPath,
+    api.includePatterns,
+    api.excludePatterns
+  );
+
+  return filePaths.map((path) => ({
+    kind: "handleFile",
+    path,
+    options,
+  }));
+};
+
+const defaultHandleFile: Repomod<any>["handleFile"] = async (
+  _,
+  path,
+  options
+) => {
+  return [
+    {
+      kind: "upsertFile",
+      path,
+      options,
+    },
+  ];
+};
+
+export const executeRepomod = async <D>(
+  api: API<D>,
+  repomod: Repomod<D>,
+  rootPath: string,
+  options: Options
+) => {
+  const stat = api.fileSystem.statSync(rootPath, { throwIfNoEntry: false });
+
+  if (stat === undefined) {
+    return [];
+  }
+
+  if (stat.isDirectory()) {
+    const handleDirectory = repomod.handleDirectory ?? defaultHandleDirectory;
+
+    const commands = await handleDirectory(api.directoryAPI, rootPath, options);
+
+    // TODO commands
+  }
+
+  if (stat.isFile()) {
+    const handleFile = repomod.handleFile ?? defaultHandleFile;
+
+    const commands = await handleFile(api.fileAPI, rootPath, options);
+  }
+};
