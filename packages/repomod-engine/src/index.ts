@@ -232,11 +232,7 @@ const handleCommand = async (
 	}
 
 	if (command.kind === 'upsertFile') {
-		const data = api.fileSystem.readFileSync(command.path, {
-			encoding: 'utf8',
-		});
-
-		// check if it exists, was not deleted etc etc
+		const data = await api.facadeFileSystem.readFile(command.path);
 
 		const handleData = repomod.handleData ?? defaultHandleData;
 
@@ -262,7 +258,7 @@ const handleCommand = async (
 export const buildApi = (
 	facadeFileSystem: FacadeFileSystem,
 	getDependencies: DataAPI['getDependencies'],
-) => {
+): API => {
 	const directoryAPI: DirectoryAPI = {
 		readDirectory: facadeFileSystem.readDirectory,
 		isDirectory: facadeFileSystem.isDirectory,
@@ -302,3 +298,114 @@ export const executeRepomod = async (
 
 	return api.facadeFileSystem.buildExternalFileCommands();
 };
+
+// tests
+
+const repomod: Repomod = {
+	// this function will be called at least for the root directory path
+	handleDirectory: async (
+		api: DirectoryAPI,
+		directoryPath: string,
+		options,
+	) => {
+		// paths contain all immediate file/directory paths within the directory
+		const paths = await api.readDirectory(directoryPath);
+
+		// if the directory has child directories, transform them as well
+		// this allows us to do thru the entire file system tree
+		const commands: DirectoryCommand[] = paths
+			.filter((path) => api.isDirectory(path))
+			.map((path) => ({
+				kind: 'handleDirectory',
+				path,
+				options,
+			}));
+
+		// find a path with a basename "index.html"
+		// there will be either one or none
+		const index_html_path =
+			paths.find((path) => api.getBasename(path) === 'index.html') ??
+			null;
+
+		// transform `Document.tsx` only if it's a file and exists
+		if (index_html_path !== null && !api.isDirectory(index_html_path)) {
+			// const dirname = api.getDirname(index_html_path);
+			// // create a sibling path for an `index.html` file
+			// const document_tsx_path = api.joinPaths(dirname, 'Document.tsx');
+
+			// const hasDocumentTsxPath = paths.includes(document_tsx_path);
+
+			// if (!hasDocumentTsxPath) {
+			commands.push({
+				kind: 'handleFile',
+				path: index_html_path,
+				options,
+			});
+			// }
+		}
+
+		// the directory is processed, now the engine will process the following commands
+		return commands;
+	},
+	// this function might not be called by the engine if no files have been targeted for processing
+	handleFile: async (api, path: string, options) => {
+		// we process only index.html files here (in this mod)
+		if (api.getBasename(path) === 'index.html') {
+			return []; // no commands
+		}
+
+		const index_html_path = path;
+
+		const dirname = api.getDirname(index_html_path);
+		const document_tsx_path = api.joinPaths(dirname, 'Document.tsx');
+
+		if (!(await api.exists(document_tsx_path))) {
+			return [];
+		}
+
+		// this operation will call the file system and cache the file content
+		const index_html_data = await api.readFile(path);
+
+		if (index_html_data == null) {
+			return [];
+		}
+
+		return [
+			{
+				// here, we mark the index.html file for deletion
+				// if another function reads it, this would end up in an error
+				// the file will be really deleted only after the mod has finished
+				kind: 'deleteFile',
+				path: index_html_path,
+				options,
+			},
+			{
+				// let's handle the data
+				kind: 'upsertFile',
+				path: document_tsx_path,
+				options: {
+					...options,
+					index_html_data,
+				},
+			},
+		];
+	},
+	// this function might not be called at all
+	handleData: async (api, path, data, options) => {
+		if (api.getBasename(path) === 'Document.tsx') {
+			return {
+				kind: 'noop',
+			};
+		}
+
+		return {
+			kind: 'updateData',
+			data: 'test',
+		};
+	},
+};
+
+const ffs = new FacadeFileSystem(fs);
+const api = buildApi(ffs, () => ({}));
+
+console.log(executeRepomod(api, repomod, '/', {}));
