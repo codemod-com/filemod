@@ -119,6 +119,7 @@ export interface API {
 	promisifiedFileSystem: typeof fsPromises;
 	directoryAPI: DirectoryAPI;
 	fileAPI: FileAPI;
+	dataAPI: DataAPI;
 }
 
 const defaultHandleDirectory: Repomod['handleDirectory'] = async (
@@ -148,6 +149,10 @@ const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) => {
 		},
 	];
 };
+
+const defaultHandleData: Repomod['handleData'] = async () => ({
+	kind: 'noop',
+});
 
 // const handleDirectoryCommand = async (
 //   api: API,
@@ -234,6 +239,25 @@ const handleCommand = async (
 			}
 		}
 	}
+
+	if (command.kind === 'upsertFile') {
+		const data = api.fileSystem.readFileSync(command.path, {
+			encoding: 'utf8',
+		});
+
+		// check if it exists, was not deleted etc etc
+
+		const handleData = repomod.handleData ?? defaultHandleData;
+
+		const dataCommand = await handleData(
+			api.dataAPI,
+			command.path,
+			data,
+			command.options,
+		);
+
+		handleCommand(api, repomod, dataCommand);
+	}
 };
 
 export const executeRepomod = async (
@@ -259,4 +283,5 @@ export const executeRepomod = async (
 	await handleCommand(api, repomod, command);
 
 	// return api.getFiles();
+	return [];
 };
