@@ -237,27 +237,17 @@ export const executeRepomod = async (
     throwIfNoEntry: false,
   });
 
-  if (stat === undefined) {
+  if (stat === undefined || (!stat.isDirectory() && !stat.isFile())) {
     return [];
   }
 
-  if (stat.isDirectory()) {
-    const command: DirectoryCommand = {
-      kind: "handleDirectory",
-      path,
-      options,
-    };
+  const command: DirectoryCommand = {
+    kind: stat.isDirectory() ? "handleDirectory" : "handleFile",
+    path,
+    options,
+  };
 
-    const commands = await handleDirectoryCommand(api, repomod, command);
-  }
+  await handleCommand(api, repomod, command);
 
-  if (stat.isFile()) {
-    const command: DirectoryCommand = {
-      kind: "handleFile",
-      path,
-      options,
-    };
-
-    const commands = await handleDirectoryCommand(api, repomod, command);
-  }
+  // return api.getFiles();
 };
