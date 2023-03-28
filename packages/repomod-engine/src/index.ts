@@ -60,6 +60,8 @@ export interface NoopCommand {
 
 export type DataCommand = ExportDataCommand | NoopCommand;
 
+export type Command = DirectoryCommand | FileCommand | DataCommand;
+
 export interface PathAPI {
   readonly getDirname: (path: string) => string; // might throw
   readonly getBasename: (path: string) => string; // might throw
@@ -137,11 +139,7 @@ const defaultHandleDirectory: Repomod["handleDirectory"] = async (
   }));
 };
 
-const defaultHandleFile: Repomod["handleFile"] = async (
-  _,
-  path,
-  options
-) => {
+const defaultHandleFile: Repomod["handleFile"] = async (_, path, options) => {
   return [
     {
       kind: "upsertFile",
@@ -151,11 +149,42 @@ const defaultHandleFile: Repomod["handleFile"] = async (
   ];
 };
 
-const handleDirectoryCommand = (directoryCommand: DirectoryCommand) {
-  if (directoryCommand.kind === "handleDirectory") {
-    
+const handleDirectoryCommand = async (
+  api: API,
+  repomod: Repomod,
+  directoryCommand: DirectoryCommand,
+  options: Options
+): Promise<ReadonlyArray<Command>> => {
+  const stat = api.fileSystem.statSync(directoryCommand.path, {
+    throwIfNoEntry: false,
+  });
+
+  if (stat === undefined) {
+    return [];
   }
-}
+
+  if (directoryCommand.kind === "handleDirectory") {
+    if (stat.isDirectory()) {
+      const handleDirectory = repomod.handleDirectory ?? defaultHandleDirectory;
+
+      return await handleDirectory(
+        api.directoryAPI,
+        directoryCommand.path,
+        options
+      );
+    }
+  }
+
+  if (directoryCommand.kind === "handleFile") {
+    if (stat.isFile()) {
+      const handleFile = repomod.handleFile ?? defaultHandleFile;
+
+      return await handleFile(api.fileAPI, directoryCommand.path, options);
+    }
+  }
+
+  return [];
+};
 
 export const executeRepomod = async (
   api: API,
@@ -163,24 +192,9 @@ export const executeRepomod = async (
   rootPath: string,
   options: Options
 ) => {
-  const stat = api.fileSystem.statSync(rootPath, { throwIfNoEntry: false });
+  const commands: Command[] = [];
 
-  if (stat === undefined) {
-    return [];
-  }
+  commands.push();
 
-  if (stat.isDirectory()) {
-    const handleDirectory = repomod.handleDirectory ?? defaultHandleDirectory;
-
-    const commands = await handleDirectory(api.directoryAPI, rootPath, options);
-
-    // TODO commands
-  }
-
-  if (stat.isFile()) {
-    const handleFile = repomod.handleFile ?? defaultHandleFile;
-
-    const commands = await handleFile(api.fileAPI, rootPath, options);
-  }
+  
 };
-
