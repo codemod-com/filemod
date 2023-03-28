@@ -6,13 +6,11 @@ import { LeftRightHashSetManager } from './leftRightHashSetManager';
 interface FacadeFile {
 	readonly kind: 'file';
 	readonly path: string;
-	readonly level: number;
 }
 
 interface FacadeDirectory {
 	readonly kind: 'directory';
 	readonly path: string;
-	readonly level: number;
 }
 
 type FacadeEntry = FacadeFile | FacadeDirectory;
@@ -20,9 +18,8 @@ type PathHashDigest = string & {
 	__PathHashDigest: '__PathHashDigest';
 };
 
-const buildPathHashDigest = (path: string): PathHashDigest => {
-	return buildHashDigest(path) as PathHashDigest;
-};
+const buildPathHashDigest = (path: string): PathHashDigest =>
+	buildHashDigest(path) as PathHashDigest;
 
 export class FacadeFileSystem {
 	private __directoryFiles = new LeftRightHashSetManager<
@@ -35,14 +32,10 @@ export class FacadeFileSystem {
 	public constructor(private __realFileSystem: typeof fs) {}
 
 	public async readDirectory(
-		path: string,
+		directoryPath: string,
 	): Promise<ReadonlyArray<FacadeEntry>> {
-		const { dir } = platformPath.parse(path);
-
-		const level = dir.split(platformPath.sep).length;
-
-		if (!this.__readDirectories.has(path)) {
-			const stat = this.__realFileSystem.statSync(path, {
+		if (!this.__readDirectories.has(directoryPath)) {
+			const stat = this.__realFileSystem.statSync(directoryPath, {
 				throwIfNoEntry: false,
 			});
 
@@ -50,44 +43,48 @@ export class FacadeFileSystem {
 				return [];
 			}
 
-			const dirents = this.__realFileSystem.readdirSync(path, {
+			const dirents = this.__realFileSystem.readdirSync(directoryPath, {
 				withFileTypes: true,
 			});
 
 			dirents.forEach((entry) => {
-				const entryPath = platformPath.join(path, entry.name);
+				const entryPath = platformPath.join(directoryPath, entry.name);
+				const pathHashDigest = buildPathHashDigest(entryPath);
 
 				if (entry.isDirectory()) {
 					const facadeEntry: FacadeEntry = {
 						kind: 'directory',
 						path: entryPath,
-						level,
 					};
 
-					const hashDigest = buildPathHashDigest(facadeEntry);
-
-					this.__facadeEntries.set(hashDigest, facadeEntry);
+					this.__facadeEntries.set(pathHashDigest, facadeEntry);
 				}
 
 				if (entry.isFile()) {
 					const facadeEntry: FacadeEntry = {
 						kind: 'file',
 						path: entryPath,
-						level,
 					};
 
-					const hashDigest = buildPathHashDigest(facadeEntry);
-
-					this.__facadeEntries.set(hashDigest, facadeEntry);
+					this.__facadeEntries.set(pathHashDigest, facadeEntry);
 				}
 			});
 		}
 
-		this.__directoryFiles.getRightHashesByLeftHash();
+		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
-		// return this.__facadeEntries.filter(
-		// 	(facadeFile) =>
-		// 		facadeFile.path.startsWith(path) && facadeFile.level === level,
-		// );
+		const facadeEntries: FacadeEntry[] = [];
+
+		this.__directoryFiles
+			.getRightHashesByLeftHash(directoryPathHashDigest)
+			.forEach((pathHashDigest) => {
+				const facadeEntry = this.__facadeEntries.get(pathHashDigest);
+
+				if (facadeEntry !== undefined) {
+					facadeEntries.push(facadeEntry);
+				}
+			});
+
+		return facadeEntries;
 	}
 }
