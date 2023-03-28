@@ -30,9 +30,19 @@ export class FacadeFileSystem {
 
 	public constructor(private __realFileSystem: typeof fs) {}
 
+	public async upsertFacadeEntry(path: string): Promise<FacadeEntry | null> {
+		const facadeDirectory = await this.upsertFacadeDirectory(path);
+
+		if (facadeDirectory) {
+			return facadeDirectory;
+		}
+
+		return this.upsertFacadeFile(path);
+	}
+
 	public async upsertFacadeDirectory(
 		directoryPath: string,
-	): Promise<boolean> {
+	): Promise<FacadeEntry | null> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		if (!this.__facadeEntries.has(directoryPathHashDigest)) {
@@ -41,7 +51,7 @@ export class FacadeFileSystem {
 			});
 
 			if (!stat || !stat.isDirectory()) {
-				return false;
+				return null;
 			}
 
 			const dirents = this.__realFileSystem.readdirSync(directoryPath, {
@@ -79,15 +89,17 @@ export class FacadeFileSystem {
 				}
 			});
 
-			this.__facadeEntries.set(directoryPathHashDigest, {
+			const facadeDirectory: FacadeDirectory = {
 				kind: 'directory',
 				path: directoryPath,
-			});
+			};
 
-			return true;
+			this.__facadeEntries.set(directoryPathHashDigest, facadeDirectory);
+
+			return facadeDirectory;
 		}
 
-		return this.__facadeEntries.has(directoryPathHashDigest);
+		return this.__facadeEntries.get(directoryPathHashDigest) ?? null;
 
 		// const facadeEntries: FacadeEntry[] = [];
 
@@ -104,7 +116,9 @@ export class FacadeFileSystem {
 		// return facadeEntries;
 	}
 
-	public async upsertFacadeFile(filePath: string): Promise<boolean> {
+	public async upsertFacadeFile(
+		filePath: string,
+	): Promise<FacadeEntry | null> {
 		const filePathHashDigest = buildPathHashDigest(filePath);
 
 		if (!this.__facadeEntries.has(filePathHashDigest)) {
@@ -113,19 +127,19 @@ export class FacadeFileSystem {
 			});
 
 			if (!stat || !stat.isFile()) {
-				return false;
+				return null;
 			}
 
-			const facadeEntry: FacadeEntry = {
+			const facadeFile: FacadeFile = {
 				kind: 'file',
 				path: filePath,
 			};
 
-			this.__facadeEntries.set(filePathHashDigest, facadeEntry);
+			this.__facadeEntries.set(filePathHashDigest, facadeFile);
 
-			return true;
+			return facadeFile;
 		}
 
-		return this.__facadeEntries.has(filePathHashDigest);
+		return this.__facadeEntries.get(filePathHashDigest) ?? null;
 	}
 }
