@@ -13,7 +13,6 @@ export interface UpsertFileCommand {
 export interface DeleteFileCommand {
 	readonly kind: 'deleteFile';
 	readonly path: string;
-	readonly options: Options;
 }
 
 export interface MoveFileCommand {
@@ -50,16 +49,17 @@ export interface HandleFileCommand {
 
 export type DirectoryCommand = HandleDirectoryCommand | HandleFileCommand;
 
-export interface ExportDataCommand {
+export interface UpsertDataCommand {
 	readonly kind: 'upsertData';
 	readonly data: string;
+	readonly path: string; // TODO we can remove it and add from context at a later stageW
 }
 
 export interface NoopCommand {
 	readonly kind: 'noop';
 }
 
-export type DataCommand = ExportDataCommand | NoopCommand;
+export type DataCommand = UpsertDataCommand | NoopCommand;
 
 export type Command = DirectoryCommand | FileCommand | DataCommand;
 
@@ -224,6 +224,14 @@ const handleCommand = async (
 
 		await handleCommand(api, repomod, dataCommand);
 	}
+
+	if (command.kind === 'deleteFile') {
+		await api.facadeFileSystem.deleteFile(command.path);
+	}
+
+	if (command.kind === 'upsertData') {
+		await api.facadeFileSystem.upsertData(command.path, command.data);
+	}
 };
 
 export const buildApi = (facadeFileSystem: FacadeFileSystem) => {
@@ -231,6 +239,7 @@ export const buildApi = (facadeFileSystem: FacadeFileSystem) => {
 		readDirectory: facadeFileSystem.readDirectory,
 		isDirectory: facadeFileSystem.isDirectory,
 		exists: facadeFileSystem.exists,
+		getFilePaths: facadeFileSystem.getFilePaths,
 	};
 };
 
