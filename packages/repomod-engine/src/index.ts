@@ -162,23 +162,23 @@ const handleCommand = async (
 	command: Command,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
-		const stat = api.fileSystem.statSync(command.path, {
-			throwIfNoEntry: false,
-		});
+		const entries = api.facadeFileSystem.readDirectory(command.path);
 
-		if (stat?.isDirectory()) {
-			const handleDirectory =
-				repomod.handleDirectory ?? defaultHandleDirectory;
+		if (entries === null) {
+			return;
+		}
 
-			const commands = await handleDirectory(
-				api.directoryAPI,
-				command.path,
-				command.options,
-			);
+		const handleDirectory =
+			repomod.handleDirectory ?? defaultHandleDirectory;
 
-			for (const command of commands) {
-				await handleCommand(api, repomod, command);
-			}
+		const commands = await handleDirectory(
+			api.directoryAPI,
+			command.path,
+			command.options,
+		);
+
+		for (const command of commands) {
+			await handleCommand(api, repomod, command);
 		}
 	}
 

@@ -27,20 +27,22 @@ export class FacadeFileSystem {
 		PathHashDigest
 	>(new Set());
 	private __facadeEntries = new Map<PathHashDigest, FacadeEntry>();
-	private __readDirectories = new Set<string>();
+	private __readDirectories = new Set<PathHashDigest>();
 
 	public constructor(private __realFileSystem: typeof fs) {}
 
 	public async readDirectory(
 		directoryPath: string,
-	): Promise<ReadonlyArray<FacadeEntry>> {
-		if (!this.__readDirectories.has(directoryPath)) {
+	): Promise<ReadonlyArray<FacadeEntry> | null> {
+		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+
+		if (!this.__readDirectories.has(directoryPathHashDigest)) {
 			const stat = this.__realFileSystem.statSync(directoryPath, {
 				throwIfNoEntry: false,
 			});
 
 			if (!stat || !stat.isDirectory()) {
-				return [];
+				return null;
 			}
 
 			const dirents = this.__realFileSystem.readdirSync(directoryPath, {
@@ -69,9 +71,9 @@ export class FacadeFileSystem {
 					this.__facadeEntries.set(pathHashDigest, facadeEntry);
 				}
 			});
-		}
 
-		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+			this.__readDirectories.add(directoryPathHashDigest);
+		}
 
 		const facadeEntries: FacadeEntry[] = [];
 
