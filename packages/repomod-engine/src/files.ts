@@ -4,6 +4,7 @@ import { buildHashDigest } from './buildHash';
 import { LeftRightHashSetManager } from './leftRightHashSetManager';
 import glob from 'glob';
 import { promisify } from 'node:util';
+import { ExternalFileCommand } from './externalFileCommands';
 
 const promisifiedGlob = promisify(glob);
 
@@ -245,5 +246,23 @@ export class FacadeFileSystem {
 
 		this.__deletedFiles.delete(pathHashDigest);
 		this.__upsertedFiles.set(pathHashDigest, data);
+	}
+
+	public buildExternalFileCommands(): ReadonlyArray<ExternalFileCommand> {
+		const commands: ExternalFileCommand[] = [];
+
+		// TODO make it one structure (string or null) ?
+		this.__deletedFiles.forEach((hashDigest) => {
+			const entry = this.__facadeEntries.get(hashDigest);
+
+			if (entry) {
+				commands.push({
+					kind: 'deleteFile',
+					path: entry.path,
+				});
+			}
+		});
+
+		return commands;
 	}
 }

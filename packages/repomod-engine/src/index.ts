@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
 import * as platformPath from 'node:path';
+import { ExternalFileCommand } from './externalFileCommands';
 import { FacadeFileSystem } from './files';
 
 type Options = Readonly<Record<string, string | undefined>>;
@@ -265,7 +266,7 @@ export const executeRepomod = async (
 	repomod: Repomod,
 	path: string,
 	options: Options,
-) => {
+): Promise<ReadonlyArray<ExternalFileCommand>> => {
 	const facadeEntry = await api.facadeFileSystem.upsertFacadeEntry(path);
 
 	if (facadeEntry === null) {
@@ -281,6 +282,5 @@ export const executeRepomod = async (
 
 	await handleCommand(api, repomod, command);
 
-	// return api.getFiles();
-	return [];
+	return api.facadeFileSystem.buildExternalFileCommands();
 };
