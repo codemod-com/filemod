@@ -149,44 +149,82 @@ const defaultHandleFile: Repomod["handleFile"] = async (_, path, options) => {
   ];
 };
 
-const handleDirectoryCommand = async (
+// const handleDirectoryCommand = async (
+//   api: API,
+//   repomod: Repomod,
+//   directoryCommand: DirectoryCommand
+// ): Promise<ReadonlyArray<Command>> => {
+//   const stat = api.fileSystem.statSync(directoryCommand.path, {
+//     throwIfNoEntry: false,
+//   });
+
+//   if (stat === undefined) {
+//     return [];
+//   }
+
+//   if (directoryCommand.kind === "handleDirectory") {
+//     if (stat.isDirectory()) {
+//       const handleDirectory = repomod.handleDirectory ?? defaultHandleDirectory;
+
+//       return await handleDirectory(
+//         api.directoryAPI,
+//         directoryCommand.path,
+//         directoryCommand.options
+//       );
+//     }
+//   }
+
+//   if (directoryCommand.kind === "handleFile") {
+//     if (stat.isFile()) {
+//       const handleFile = repomod.handleFile ?? defaultHandleFile;
+
+//       return await handleFile(
+//         api.fileAPI,
+//         directoryCommand.path,
+//         directoryCommand.options
+//       );
+//     }
+//   }
+
+//   return [];
+// };
+
+const handleCommand = async (
   api: API,
   repomod: Repomod,
-  directoryCommand: DirectoryCommand
-): Promise<ReadonlyArray<Command>> => {
-  const stat = api.fileSystem.statSync(directoryCommand.path, {
-    throwIfNoEntry: false,
-  });
+  command: Command
+): Promise<void> => {
+  if (command.kind === "handleDirectory") {
+    const stat = api.fileSystem.statSync(command.path, {
+      throwIfNoEntry: false,
+    });
 
-  if (stat === undefined) {
-    return [];
-  }
-
-  if (directoryCommand.kind === "handleDirectory") {
-    if (stat.isDirectory()) {
+    if (stat?.isDirectory()) {
       const handleDirectory = repomod.handleDirectory ?? defaultHandleDirectory;
 
-      return await handleDirectory(
+      const commands = await handleDirectory(
         api.directoryAPI,
-        directoryCommand.path,
-        directoryCommand.options
+        command.path,
+        command.options
       );
     }
   }
 
-  if (directoryCommand.kind === "handleFile") {
-    if (stat.isFile()) {
+  if (command.kind === "handleFile") {
+    const stat = api.fileSystem.statSync(command.path, {
+      throwIfNoEntry: false,
+    });
+
+    if (stat?.isFile()) {
       const handleFile = repomod.handleFile ?? defaultHandleFile;
 
-      return await handleFile(
+      const commands = await handleFile(
         api.fileAPI,
-        directoryCommand.path,
-        directoryCommand.options
+        command.path,
+        command.options
       );
     }
   }
-
-  return [];
 };
 
 export const executeRepomod = async (
@@ -206,6 +244,16 @@ export const executeRepomod = async (
   if (stat.isDirectory()) {
     const command: DirectoryCommand = {
       kind: "handleDirectory",
+      path,
+      options,
+    };
+
+    const commands = await handleDirectoryCommand(api, repomod, command);
+  }
+
+  if (stat.isFile()) {
+    const command: DirectoryCommand = {
+      kind: "handleFile",
       path,
       options,
     };
