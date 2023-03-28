@@ -162,11 +162,11 @@ const handleCommand = async (
 	command: Command,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
-		const entries = api.facadeFileSystem.upsertFacadeDirectory(
+		const facadeEntry = api.facadeFileSystem.upsertFacadeDirectory(
 			command.path,
 		);
 
-		if (entries === null) {
+		if (facadeEntry === null) {
 			return;
 		}
 
@@ -185,11 +185,11 @@ const handleCommand = async (
 	}
 
 	if (command.kind === 'handleFile') {
-		const succeeded = await api.facadeFileSystem.upsertFacadeFile(
+		const facadeEntry = await api.facadeFileSystem.upsertFacadeFile(
 			command.path,
 		);
 
-		if (!succeeded) {
+		if (facadeEntry === null) {
 			return;
 		}
 
@@ -232,16 +232,15 @@ export const executeRepomod = async (
 	path: string,
 	options: Options,
 ) => {
-	const stat = api.fileSystem.statSync(path, {
-		throwIfNoEntry: false,
-	});
+	const facadeEntry = await api.facadeFileSystem.upsertFacadeEntry(path);
 
-	if (stat === undefined || (!stat.isDirectory() && !stat.isFile())) {
+	if (facadeEntry === null) {
 		return [];
 	}
 
 	const command: DirectoryCommand = {
-		kind: stat.isDirectory() ? 'handleDirectory' : 'handleFile',
+		kind:
+			facadeEntry.kind === 'directory' ? 'handleDirectory' : 'handleFile',
 		path,
 		options,
 	};
