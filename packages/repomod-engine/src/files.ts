@@ -213,8 +213,6 @@ export class FacadeFileSystem {
 			const pathHashDigest = buildPathHashDigest(path);
 
 			this.__facadeEntries.set(pathHashDigest, facadeFile);
-
-			this.__changes.delete(pathHashDigest);
 		});
 
 		return paths;

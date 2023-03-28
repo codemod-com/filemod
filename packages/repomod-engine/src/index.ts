@@ -169,6 +169,24 @@ const handleCommand = async (
 	command: Command,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
+		if (repomod.includePatterns) {
+			const paths = await api.facadeFileSystem.getFilePaths(
+				command.path,
+				repomod.includePatterns,
+				repomod.excludePatterns ?? [],
+			);
+
+			for (const path of paths) {
+				const handleFileCommand: HandleFileCommand = {
+					kind: 'handleFile',
+					path,
+					options: command.options,
+				};
+
+				await handleCommand(api, repomod, handleFileCommand);
+			}
+		}
+
 		const facadeEntry = api.facadeFileSystem.upsertFacadeDirectory(
 			command.path,
 		);
