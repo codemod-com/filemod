@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
+import { FacadeFileSystem } from './files';
 
 type Options = Readonly<Record<string, string | undefined>>;
 
@@ -115,6 +116,7 @@ export interface Repomod {
 }
 
 export interface API {
+	facadeFileSystem: FacadeFileSystem;
 	fileSystem: typeof fs;
 	promisifiedFileSystem: typeof fsPromises;
 	directoryAPI: DirectoryAPI;
@@ -153,46 +155,6 @@ const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) => {
 const defaultHandleData: Repomod['handleData'] = async () => ({
 	kind: 'noop',
 });
-
-// const handleDirectoryCommand = async (
-//   api: API,
-//   repomod: Repomod,
-//   directoryCommand: DirectoryCommand
-// ): Promise<ReadonlyArray<Command>> => {
-//   const stat = api.fileSystem.statSync(directoryCommand.path, {
-//     throwIfNoEntry: false,
-//   });
-
-//   if (stat === undefined) {
-//     return [];
-//   }
-
-//   if (directoryCommand.kind === "handleDirectory") {
-//     if (stat.isDirectory()) {
-//       const handleDirectory = repomod.handleDirectory ?? defaultHandleDirectory;
-
-//       return await handleDirectory(
-//         api.directoryAPI,
-//         directoryCommand.path,
-//         directoryCommand.options
-//       );
-//     }
-//   }
-
-//   if (directoryCommand.kind === "handleFile") {
-//     if (stat.isFile()) {
-//       const handleFile = repomod.handleFile ?? defaultHandleFile;
-
-//       return await handleFile(
-//         api.fileAPI,
-//         directoryCommand.path,
-//         directoryCommand.options
-//       );
-//     }
-//   }
-
-//   return [];
-// };
 
 const handleCommand = async (
 	api: API,
@@ -256,7 +218,7 @@ const handleCommand = async (
 			command.options,
 		);
 
-		handleCommand(api, repomod, dataCommand);
+		await handleCommand(api, repomod, dataCommand);
 	}
 };
 
