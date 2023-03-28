@@ -66,11 +66,11 @@ export interface PathAPI {
   readonly joinPaths: (...paths: string[]) => string; // might throw
 }
 
-interface DataAPI<D> extends PathAPI {
-  getDependencies: () => D;
+interface DataAPI extends PathAPI {
+  getDependencies: () => Record<string, unknown>;
 }
 
-interface FileAPI<D> extends PathAPI, DataAPI<D> {
+interface FileAPI extends PathAPI, DataAPI {
   // patterns and paths
   readonly includePatterns: ReadonlyArray<string>;
   readonly excludePatterns: ReadonlyArray<string>;
@@ -82,7 +82,7 @@ interface FileAPI<D> extends PathAPI, DataAPI<D> {
   readonly readFile: (filePath: string) => Promise<string>; // might throw
 }
 
-interface DirectoryAPI<D> extends FileAPI<D> {
+interface DirectoryAPI extends FileAPI {
   readonly readDirectory: (
     directoryPath: string
   ) => Promise<ReadonlyArray<string>>; // might throw
@@ -93,33 +93,33 @@ interface DirectoryAPI<D> extends FileAPI<D> {
   ) => Promise<ReadonlyArray<string>>;
 }
 
-export interface Repomod<D> {
+export interface Repomod {
   readonly handleDirectory?: (
-    api: DirectoryAPI<D>,
+    api: DirectoryAPI,
     path: string,
     options: Options
   ) => Promise<ReadonlyArray<DirectoryCommand>>;
   readonly handleFile?: (
-    api: FileAPI<D>,
+    api: FileAPI,
     path: string,
     options: Options
   ) => Promise<ReadonlyArray<FileCommand>>;
   readonly handleData?: (
-    api: DataAPI<D>,
+    api: DataAPI,
     path: string,
     data: string,
     options: Options
   ) => Promise<DataCommand>;
 }
 
-export interface API<D> {
+export interface API {
   fileSystem: typeof fs;
   promisifiedFileSystem: typeof fsPromises;
-  directoryAPI: DirectoryAPI<D>;
-  fileAPI: FileAPI<D>;
+  directoryAPI: DirectoryAPI;
+  fileAPI: FileAPI;
 }
 
-const defaultHandleDirectory: Repomod<any>["handleDirectory"] = async (
+const defaultHandleDirectory: Repomod["handleDirectory"] = async (
   api,
   directoryPath,
   options
@@ -137,7 +137,7 @@ const defaultHandleDirectory: Repomod<any>["handleDirectory"] = async (
   }));
 };
 
-const defaultHandleFile: Repomod<any>["handleFile"] = async (
+const defaultHandleFile: Repomod["handleFile"] = async (
   _,
   path,
   options
@@ -151,9 +151,15 @@ const defaultHandleFile: Repomod<any>["handleFile"] = async (
   ];
 };
 
-export const executeRepomod = async <D>(
-  api: API<D>,
-  repomod: Repomod<D>,
+const handleDirectoryCommand = (directoryCommand: DirectoryCommand) {
+  if (directoryCommand.kind === "handleDirectory") {
+    
+  }
+}
+
+export const executeRepomod = async (
+  api: API,
+  repomod: Repomod,
   rootPath: string,
   options: Options
 ) => {
@@ -177,3 +183,4 @@ export const executeRepomod = async <D>(
     const commands = await handleFile(api.fileAPI, rootPath, options);
   }
 };
+
