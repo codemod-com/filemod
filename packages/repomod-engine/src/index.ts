@@ -112,8 +112,6 @@ export interface Repomod {
 
 export interface API {
 	facadeFileSystem: FacadeFileSystem;
-	fileSystem: typeof fs;
-	promisifiedFileSystem: typeof fsPromises;
 	directoryAPI: DirectoryAPI;
 	fileAPI: FileAPI;
 	dataAPI: DataAPI;
@@ -259,19 +257,34 @@ export const buildApi = (
 	facadeFileSystem: FacadeFileSystem,
 	getDependencies: DataAPI['getDependencies'],
 ): API => {
+	const pathAPI: PathAPI = {
+		getDirname: (path) => platformPath.dirname(path),
+		getBasename: (path) => platformPath.basename(path),
+		joinPaths: (...paths) => platformPath.join(...paths),
+	};
+
+	const dataAPI: DataAPI = {
+		getDependencies,
+		...pathAPI,
+	};
+
 	const directoryAPI: DirectoryAPI = {
 		readDirectory: facadeFileSystem.readDirectory,
 		isDirectory: facadeFileSystem.isDirectory,
 		exists: facadeFileSystem.exists,
 		readFile: facadeFileSystem.readFile,
-		getDirname: (path) => platformPath.dirname(path),
-		getBasename: (path) => platformPath.basename(path),
-		joinPaths: (...paths) => platformPath.join(...paths),
-		getDependencies,
+		...dataAPI,
+	};
+
+	const fileAPI: FileAPI = {
+		...directoryAPI,
 	};
 
 	return {
 		directoryAPI,
+		facadeFileSystem,
+		fileAPI,
+		dataAPI,
 	};
 };
 
@@ -399,7 +412,8 @@ const repomod: Repomod = {
 		}
 
 		return {
-			kind: 'updateData',
+			kind: 'upsertData',
+			path,
 			data: 'test',
 		};
 	},
