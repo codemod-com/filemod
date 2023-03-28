@@ -142,4 +142,24 @@ export class FacadeFileSystem {
 
 		return this.__facadeEntries.get(filePathHashDigest) ?? null;
 	}
+
+	public async readDirectory(
+		directoryPath: string,
+	): Promise<ReadonlyArray<string>> {
+		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+
+		const paths: string[] = [];
+
+		this.__directoryFiles
+			.getRightHashesByLeftHash(directoryPathHashDigest)
+			.forEach((pathHashDigest) => {
+				const facadeEntry = this.__facadeEntries.get(pathHashDigest);
+
+				if (facadeEntry !== undefined) {
+					paths.push(facadeEntry.path);
+				}
+			});
+
+		return paths;
+	}
 }
