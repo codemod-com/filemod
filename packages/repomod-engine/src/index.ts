@@ -183,22 +183,22 @@ const handleCommand = async (
 	}
 
 	if (command.kind === 'handleFile') {
-		const stat = api.fileSystem.statSync(command.path, {
-			throwIfNoEntry: false,
-		});
+		const facadeFile = await api.facadeFileSystem.readFile(command.path);
 
-		if (stat?.isFile()) {
-			const handleFile = repomod.handleFile ?? defaultHandleFile;
+		if (facadeFile === null) {
+			return;
+		}
 
-			const commands = await handleFile(
-				api.fileAPI,
-				command.path,
-				command.options,
-			);
+		const handleFile = repomod.handleFile ?? defaultHandleFile;
 
-			for (const command of commands) {
-				await handleCommand(api, repomod, command);
-			}
+		const commands = await handleFile(
+			api.fileAPI,
+			command.path,
+			command.options,
+		);
+
+		for (const command of commands) {
+			await handleCommand(api, repomod, command);
 		}
 	}
 

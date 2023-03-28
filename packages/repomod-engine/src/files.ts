@@ -92,5 +92,26 @@ export class FacadeFileSystem {
 		return facadeEntries;
 	}
 
-	public async readFile(filePath: string): Promise<void> {}
+	public async readFile(filePath: string): Promise<FacadeEntry | null> {
+		const filePathHashDigest = buildPathHashDigest(filePath);
+
+		if (!this.__facadeEntries.has(filePathHashDigest)) {
+			const stat = this.__realFileSystem.statSync(filePath, {
+				throwIfNoEntry: false,
+			});
+
+			if (!stat || !stat.isFile()) {
+				return null;
+			}
+
+			const facadeEntry: FacadeEntry = {
+				kind: 'file',
+				path: filePath,
+			};
+
+			this.__facadeEntries.set(filePathHashDigest, facadeEntry);
+		}
+
+		return this.__facadeEntries.get(filePathHashDigest) ?? null;
+	}
 }
