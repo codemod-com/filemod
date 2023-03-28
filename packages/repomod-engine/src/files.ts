@@ -148,4 +148,19 @@ export class FacadeFileSystem {
 
 		return paths;
 	}
+
+	public async isDirectory(directoryPath: string): Promise<boolean> {
+		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+
+		return (
+			this.__facadeEntries.get(directoryPathHashDigest)?.kind ===
+			'directory'
+		);
+	}
+
+    public async exists(directoryPath: string): Promise<boolean> {
+        const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+
+		return this.__facadeEntries.has(directoryPathHashDigest);
+    }
 }

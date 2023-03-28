@@ -78,7 +78,7 @@ interface FileAPI extends PathAPI, DataAPI {
 	readonly includePatterns: ReadonlyArray<string>;
 	readonly excludePatterns: ReadonlyArray<string>;
 
-	readonly isDirectory: (path: string) => boolean; // might throw
+	readonly isDirectory: (path: string) => Promise<boolean>;
 	readonly exists: (path: string) => Promise<boolean>;
 
 	// reading directories and files
@@ -224,6 +224,14 @@ const handleCommand = async (
 
 		await handleCommand(api, repomod, dataCommand);
 	}
+};
+
+export const buildApi = (facadeFileSystem: FacadeFileSystem) => {
+	const directoryAPI: DirectoryAPI = {
+		readDirectory: facadeFileSystem.readDirectory,
+		isDirectory: facadeFileSystem.isDirectory,
+		exists: facadeFileSystem.exists,
+	};
 };
 
 export const executeRepomod = async (
