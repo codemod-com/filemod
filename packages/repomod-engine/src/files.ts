@@ -30,9 +30,9 @@ export class FacadeFileSystem {
 
 	public constructor(private __realFileSystem: typeof fs) {}
 
-	public async readDirectory(
+	public async upsertFacadeDirectory(
 		directoryPath: string,
-	): Promise<ReadonlyArray<FacadeEntry> | null> {
+	): Promise<boolean> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		if (!this.__facadeEntries.has(directoryPathHashDigest)) {
@@ -41,7 +41,7 @@ export class FacadeFileSystem {
 			});
 
 			if (!stat || !stat.isDirectory()) {
-				return null;
+				return false;
 			}
 
 			const dirents = this.__realFileSystem.readdirSync(directoryPath, {
@@ -75,24 +75,28 @@ export class FacadeFileSystem {
 				kind: 'directory',
 				path: directoryPath,
 			});
+
+			return true;
 		}
 
-		const facadeEntries: FacadeEntry[] = [];
+		return this.__facadeEntries.has(directoryPathHashDigest);
 
-		this.__directoryFiles
-			.getRightHashesByLeftHash(directoryPathHashDigest)
-			.forEach((pathHashDigest) => {
-				const facadeEntry = this.__facadeEntries.get(pathHashDigest);
+		// const facadeEntries: FacadeEntry[] = [];
 
-				if (facadeEntry !== undefined) {
-					facadeEntries.push(facadeEntry);
-				}
-			});
+		// this.__directoryFiles
+		// 	.getRightHashesByLeftHash(directoryPathHashDigest)
+		// 	.forEach((pathHashDigest) => {
+		// 		const facadeEntry = this.__facadeEntries.get(pathHashDigest);
 
-		return facadeEntries;
+		// 		if (facadeEntry !== undefined) {
+		// 			facadeEntries.push(facadeEntry);
+		// 		}
+		// 	});
+
+		// return facadeEntries;
 	}
 
-	public async readFile(filePath: string): Promise<FacadeEntry | null> {
+	public async upsertFacadeFile(filePath: string): Promise<boolean> {
 		const filePathHashDigest = buildPathHashDigest(filePath);
 
 		if (!this.__facadeEntries.has(filePathHashDigest)) {
@@ -101,7 +105,7 @@ export class FacadeFileSystem {
 			});
 
 			if (!stat || !stat.isFile()) {
-				return null;
+				return false;
 			}
 
 			const facadeEntry: FacadeEntry = {
@@ -110,8 +114,10 @@ export class FacadeFileSystem {
 			};
 
 			this.__facadeEntries.set(filePathHashDigest, facadeEntry);
+
+			return true;
 		}
 
-		return this.__facadeEntries.get(filePathHashDigest) ?? null;
+		return this.__facadeEntries.has(filePathHashDigest);
 	}
 }

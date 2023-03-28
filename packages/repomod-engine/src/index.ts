@@ -162,7 +162,9 @@ const handleCommand = async (
 	command: Command,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
-		const entries = api.facadeFileSystem.readDirectory(command.path);
+		const entries = api.facadeFileSystem.upsertFacadeDirectory(
+			command.path,
+		);
 
 		if (entries === null) {
 			return;
@@ -183,9 +185,11 @@ const handleCommand = async (
 	}
 
 	if (command.kind === 'handleFile') {
-		const facadeFile = await api.facadeFileSystem.readFile(command.path);
+		const succeeded = await api.facadeFileSystem.upsertFacadeFile(
+			command.path,
+		);
 
-		if (facadeFile === null) {
+		if (!succeeded) {
 			return;
 		}
 
