@@ -100,20 +100,6 @@ export class FacadeFileSystem {
 		}
 
 		return this.__facadeEntries.get(directoryPathHashDigest) ?? null;
-
-		// const facadeEntries: FacadeEntry[] = [];
-
-		// this.__directoryFiles
-		// 	.getRightHashesByLeftHash(directoryPathHashDigest)
-		// 	.forEach((pathHashDigest) => {
-		// 		const facadeEntry = this.__facadeEntries.get(pathHashDigest);
-
-		// 		if (facadeEntry !== undefined) {
-		// 			facadeEntries.push(facadeEntry);
-		// 		}
-		// 	});
-
-		// return facadeEntries;
 	}
 
 	public async upsertFacadeFile(
