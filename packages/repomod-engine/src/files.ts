@@ -58,6 +58,10 @@ export class FacadeFileSystem {
 						path: entryPath,
 					};
 
+					this.__directoryFiles.upsert(
+						directoryPathHashDigest,
+						pathHashDigest,
+					);
 					this.__facadeEntries.set(pathHashDigest, facadeEntry);
 				}
 
@@ -67,6 +71,10 @@ export class FacadeFileSystem {
 						path: entryPath,
 					};
 
+					this.__directoryFiles.upsert(
+						directoryPathHashDigest,
+						pathHashDigest,
+					);
 					this.__facadeEntries.set(pathHashDigest, facadeEntry);
 				}
 			});
