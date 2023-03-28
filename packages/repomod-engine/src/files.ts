@@ -159,6 +159,22 @@ export class FacadeFileSystem {
 		return paths;
 	}
 
+	public async readFile(path: string): Promise<string> {
+		const pathHashDigest = buildPathHashDigest(path);
+
+		if (this.__deletedFiles.has(pathHashDigest)) {
+			throw new Error('This file has already been deleted');
+		}
+
+		const upsertedData = this.__upsertedFiles.get(pathHashDigest);
+
+		if (upsertedData !== undefined) {
+			return upsertedData;
+		}
+
+		return this.__realFileSystem.readFileSync(path, { encoding: 'utf8' });
+	}
+
 	public async isDirectory(directoryPath: string): Promise<boolean> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
@@ -186,7 +202,19 @@ export class FacadeFileSystem {
 			ignore: excludePatterns,
 		});
 
-		// TODO
+		paths.forEach((path) => {
+			const facadeFile: FacadeFile = {
+				kind: 'file',
+				path,
+			};
+
+			const pathHashDigest = buildPathHashDigest(path);
+
+			this.__facadeEntries.set(pathHashDigest, facadeFile);
+
+			this.__deletedFiles.delete(pathHashDigest);
+			this.__upsertedFiles.delete(pathHashDigest);
+		});
 
 		return paths;
 	}

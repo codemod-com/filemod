@@ -74,10 +74,6 @@ interface DataAPI extends PathAPI {
 }
 
 interface FileAPI extends PathAPI, DataAPI {
-	// patterns and paths
-	readonly includePatterns: ReadonlyArray<string>;
-	readonly excludePatterns: ReadonlyArray<string>;
-
 	readonly isDirectory: (path: string) => Promise<boolean>;
 	readonly exists: (path: string) => Promise<boolean>;
 
@@ -89,14 +85,11 @@ interface DirectoryAPI extends FileAPI {
 	readonly readDirectory: (
 		directoryPath: string,
 	) => Promise<ReadonlyArray<string>>; // might throw
-	readonly getFilePaths: (
-		directoryPath: string,
-		includePatterns: ReadonlyArray<string>,
-		excludePatterns: ReadonlyArray<string>,
-	) => Promise<ReadonlyArray<string>>;
 }
 
 export interface Repomod {
+	readonly includePatterns?: ReadonlyArray<string>;
+	readonly excludePatterns?: ReadonlyArray<string>;
 	readonly handleDirectory?: (
 		api: DirectoryAPI,
 		path: string,
@@ -129,17 +122,29 @@ const defaultHandleDirectory: Repomod['handleDirectory'] = async (
 	directoryPath,
 	options,
 ) => {
-	const filePaths = await api.getFilePaths(
-		directoryPath,
-		api.includePatterns,
-		api.excludePatterns,
-	);
+	const commands: DirectoryCommand[] = [];
 
-	return filePaths.map((path) => ({
-		kind: 'handleFile',
-		path,
-		options,
-	}));
+	const paths = await api.readDirectory(directoryPath);
+
+	for (const path of paths) {
+		const directory = await api.isDirectory(path);
+
+		if (directory) {
+			commands.push({
+				kind: 'handleDirectory',
+				path,
+				options,
+			});
+		} else {
+			commands.push({
+				kind: 'handleFile',
+				path,
+				options,
+			});
+		}
+	}
+
+	return commands;
 };
 
 const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) => {
@@ -239,7 +244,7 @@ export const buildApi = (facadeFileSystem: FacadeFileSystem) => {
 		readDirectory: facadeFileSystem.readDirectory,
 		isDirectory: facadeFileSystem.isDirectory,
 		exists: facadeFileSystem.exists,
-		getFilePaths: facadeFileSystem.getFilePaths,
+		readFile: facadeFileSystem.readFile,
 	};
 };
 
