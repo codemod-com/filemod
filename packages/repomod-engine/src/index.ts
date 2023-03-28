@@ -1,5 +1,6 @@
 import * as fs from 'node:fs';
 import * as fsPromises from 'node:fs/promises';
+import * as platformPath from 'node:path';
 import { FacadeFileSystem } from './files';
 
 type Options = Readonly<Record<string, string | undefined>>;
@@ -239,12 +240,23 @@ const handleCommand = async (
 	}
 };
 
-export const buildApi = (facadeFileSystem: FacadeFileSystem) => {
+export const buildApi = (
+	facadeFileSystem: FacadeFileSystem,
+	getDependencies: DataAPI['getDependencies'],
+) => {
 	const directoryAPI: DirectoryAPI = {
 		readDirectory: facadeFileSystem.readDirectory,
 		isDirectory: facadeFileSystem.isDirectory,
 		exists: facadeFileSystem.exists,
 		readFile: facadeFileSystem.readFile,
+		getDirname: (path) => platformPath.dirname(path),
+		getBasename: (path) => platformPath.basename(path),
+		joinPaths: (...paths) => platformPath.join(...paths),
+		getDependencies,
+	};
+
+	return {
+		directoryAPI,
 	};
 };
 
