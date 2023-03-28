@@ -32,8 +32,7 @@ export class FacadeFileSystem {
 		PathHashDigest
 	>(new Set());
 	private __facadeEntries = new Map<PathHashDigest, FacadeEntry>();
-	private __deletedFiles = new Set<PathHashDigest>();
-	private __upsertedFiles = new Map<PathHashDigest, string>();
+	private __changes = new Map<PathHashDigest, string | null>();
 
 	public constructor(private __realFileSystem: typeof fs) {}
 
@@ -163,17 +162,19 @@ export class FacadeFileSystem {
 	public async readFile(path: string): Promise<string> {
 		const pathHashDigest = buildPathHashDigest(path);
 
-		if (this.__deletedFiles.has(pathHashDigest)) {
+		const upsertedData = this.__changes.get(pathHashDigest);
+
+		if (upsertedData === undefined) {
+			return this.__realFileSystem.readFileSync(path, {
+				encoding: 'utf8',
+			});
+		}
+
+		if (upsertedData === null) {
 			throw new Error('This file has already been deleted');
 		}
 
-		const upsertedData = this.__upsertedFiles.get(pathHashDigest);
-
-		if (upsertedData !== undefined) {
-			return upsertedData;
-		}
-
-		return this.__realFileSystem.readFileSync(path, { encoding: 'utf8' });
+		return upsertedData;
 	}
 
 	public async isDirectory(directoryPath: string): Promise<boolean> {
@@ -213,8 +214,7 @@ export class FacadeFileSystem {
 
 			this.__facadeEntries.set(pathHashDigest, facadeFile);
 
-			this.__deletedFiles.delete(pathHashDigest);
-			this.__upsertedFiles.delete(pathHashDigest);
+			this.__changes.delete(pathHashDigest);
 		});
 
 		return paths;
@@ -229,9 +229,7 @@ export class FacadeFileSystem {
 		};
 
 		this.__facadeEntries.set(pathHashDigest, facadeFile);
-
-		this.__deletedFiles.add(pathHashDigest);
-		this.__upsertedFiles.delete(pathHashDigest);
+		this.__changes.set(pathHashDigest, null);
 	}
 
 	public async upsertData(filePath: string, data: string): Promise<void> {
@@ -244,21 +242,28 @@ export class FacadeFileSystem {
 
 		this.__facadeEntries.set(pathHashDigest, facadeFile);
 
-		this.__deletedFiles.delete(pathHashDigest);
-		this.__upsertedFiles.set(pathHashDigest, data);
+		this.__changes.set(pathHashDigest, data);
 	}
 
 	public buildExternalFileCommands(): ReadonlyArray<ExternalFileCommand> {
 		const commands: ExternalFileCommand[] = [];
 
 		// TODO make it one structure (string or null) ?
-		this.__deletedFiles.forEach((hashDigest) => {
+		this.__changes.forEach((data, hashDigest) => {
 			const entry = this.__facadeEntries.get(hashDigest);
 
-			if (entry) {
+			if (entry && data === null) {
 				commands.push({
 					kind: 'deleteFile',
 					path: entry.path,
+				});
+			}
+
+			if (entry && data !== null) {
+				commands.push({
+					kind: 'upsertFile',
+					path: entry.path,
+					data,
 				});
 			}
 		});
