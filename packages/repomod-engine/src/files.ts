@@ -1,6 +1,7 @@
 import * as fs from 'node:fs';
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash';
+import { LeftRightHashSetManager } from './leftRightHashSetManager';
 
 interface FacadeFile {
 	readonly kind: 'file';
@@ -15,18 +16,20 @@ interface FacadeDirectory {
 }
 
 type FacadeEntry = FacadeFile | FacadeDirectory;
-type FacadeEntryHashDigest = string & {
-	__FacadeEntryHashDigest: '__FacadeEntryHashDigest';
+type PathHashDigest = string & {
+	__PathHashDigest: '__PathHashDigest';
 };
 
-const buildFacadeEntryHashDigest = (
-	facadeEntry: FacadeEntry,
-): FacadeEntryHashDigest => {
-	return buildHashDigest(facadeEntry.path) as FacadeEntryHashDigest;
+const buildPathHashDigest = (path: string): PathHashDigest => {
+	return buildHashDigest(path) as PathHashDigest;
 };
 
 export class FacadeFileSystem {
-	private __facadeEntries = new Map<FacadeEntryHashDigest, FacadeEntry>();
+	private __directoryFiles = new LeftRightHashSetManager<
+		PathHashDigest,
+		PathHashDigest
+	>(new Set());
+	private __facadeEntries = new Map<PathHashDigest, FacadeEntry>();
 	private __readDirectories = new Set<string>();
 
 	public constructor(private __realFileSystem: typeof fs) {}
@@ -61,7 +64,7 @@ export class FacadeFileSystem {
 						level,
 					};
 
-					const hashDigest = buildFacadeEntryHashDigest(facadeEntry);
+					const hashDigest = buildPathHashDigest(facadeEntry);
 
 					this.__facadeEntries.set(hashDigest, facadeEntry);
 				}
@@ -73,16 +76,18 @@ export class FacadeFileSystem {
 						level,
 					};
 
-					const hashDigest = buildFacadeEntryHashDigest(facadeEntry);
+					const hashDigest = buildPathHashDigest(facadeEntry);
 
 					this.__facadeEntries.set(hashDigest, facadeEntry);
 				}
 			});
 		}
 
-		return this.__facadeEntries.filter(
-			(facadeFile) =>
-				facadeFile.path.startsWith(path) && facadeFile.level === level,
-		);
+		this.__directoryFiles.getRightHashesByLeftHash();
+
+		// return this.__facadeEntries.filter(
+		// 	(facadeFile) =>
+		// 		facadeFile.path.startsWith(path) && facadeFile.level === level,
+		// );
 	}
 }
