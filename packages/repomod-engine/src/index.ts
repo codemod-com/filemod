@@ -1,5 +1,3 @@
-import * as fs from 'node:fs';
-import * as fsPromises from 'node:fs/promises';
 import * as platformPath from 'node:path';
 import { ExternalFileCommand } from './externalFileCommands';
 import { FacadeFileSystem } from './files';
@@ -269,10 +267,10 @@ export const buildApi = (
 	};
 
 	const directoryAPI: DirectoryAPI = {
-		readDirectory: facadeFileSystem.readDirectory,
-		isDirectory: facadeFileSystem.isDirectory,
-		exists: facadeFileSystem.exists,
-		readFile: facadeFileSystem.readFile,
+		readDirectory: (path) => facadeFileSystem.readDirectory(path),
+		isDirectory: (path) => facadeFileSystem.isDirectory(path),
+		exists: (path) => facadeFileSystem.exists(path),
+		readFile: (path) => facadeFileSystem.readFile(path),
 		...dataAPI,
 	};
 
@@ -404,7 +402,7 @@ const repomod: Repomod = {
 		];
 	},
 	// this function might not be called at all
-	handleData: async (api, path, data, options) => {
+	handleData: async (api, path) => {
 		if (api.getBasename(path) === 'Document.tsx') {
 			return {
 				kind: 'noop',
@@ -419,7 +417,11 @@ const repomod: Repomod = {
 	},
 };
 
-const ffs = new FacadeFileSystem(fs);
+import { Volume } from 'memfs';
+
+const vol = Volume.fromJSON({ '/foo': 'bar' });
+
+const ffs = new FacadeFileSystem(vol as any);
 const api = buildApi(ffs, () => ({}));
 
 console.log(executeRepomod(api, repomod, '/', {}));

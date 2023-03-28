@@ -103,6 +103,8 @@ export class FacadeFileSystem {
 	public async readDirectory(
 		directoryPath: string,
 	): Promise<ReadonlyArray<string>> {
+		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+
 		const dirents = this.__realFileSystem.readdirSync(directoryPath, {
 			withFileTypes: true,
 		});
@@ -141,8 +143,6 @@ export class FacadeFileSystem {
 				this.__facadeEntries.set(pathHashDigest, facadeEntry);
 			}
 		});
-
-		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		const paths: string[] = [];
 
