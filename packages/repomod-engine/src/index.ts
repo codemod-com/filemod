@@ -152,8 +152,7 @@ const defaultHandleFile: Repomod["handleFile"] = async (_, path, options) => {
 const handleDirectoryCommand = async (
   api: API,
   repomod: Repomod,
-  directoryCommand: DirectoryCommand,
-  options: Options
+  directoryCommand: DirectoryCommand
 ): Promise<ReadonlyArray<Command>> => {
   const stat = api.fileSystem.statSync(directoryCommand.path, {
     throwIfNoEntry: false,
@@ -170,7 +169,7 @@ const handleDirectoryCommand = async (
       return await handleDirectory(
         api.directoryAPI,
         directoryCommand.path,
-        options
+        directoryCommand.options
       );
     }
   }
@@ -179,7 +178,11 @@ const handleDirectoryCommand = async (
     if (stat.isFile()) {
       const handleFile = repomod.handleFile ?? defaultHandleFile;
 
-      return await handleFile(api.fileAPI, directoryCommand.path, options);
+      return await handleFile(
+        api.fileAPI,
+        directoryCommand.path,
+        directoryCommand.options
+      );
     }
   }
 
@@ -189,12 +192,24 @@ const handleDirectoryCommand = async (
 export const executeRepomod = async (
   api: API,
   repomod: Repomod,
-  rootPath: string,
+  path: string,
   options: Options
 ) => {
-  const commands: Command[] = [];
+  const stat = api.fileSystem.statSync(path, {
+    throwIfNoEntry: false,
+  });
 
-  commands.push();
+  if (stat === undefined) {
+    return [];
+  }
 
-  
+  if (stat.isDirectory()) {
+    const command: DirectoryCommand = {
+      kind: "handleDirectory",
+      path,
+      options,
+    };
+
+    const commands = await handleDirectoryCommand(api, repomod, command);
+  }
 };
