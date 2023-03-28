@@ -74,11 +74,10 @@ interface DataAPI extends PathAPI {
 }
 
 interface FileAPI extends PathAPI, DataAPI {
-	readonly isDirectory: (path: string) => Promise<boolean>;
-	readonly exists: (path: string) => Promise<boolean>;
-
+	readonly isDirectory: (path: string) => boolean;
+	readonly exists: (path: string) => boolean;
 	// reading directories and files
-	readonly readFile: (filePath: string) => Promise<string>; // might throw
+	readonly readFile: (filePath: string) => Promise<string>;
 }
 
 interface DirectoryAPI extends FileAPI {
@@ -164,6 +163,8 @@ const handleCommand = async (
 	repomod: Repomod,
 	command: Command,
 ): Promise<void> => {
+	console.log(command);
+
 	if (command.kind === 'handleDirectory') {
 		if (repomod.includePatterns) {
 			const paths = await api.facadeFileSystem.getFilePaths(
@@ -319,8 +320,11 @@ const repomod: Repomod = {
 		directoryPath: string,
 		options,
 	) => {
+		console.log('handleDirectory');
 		// paths contain all immediate file/directory paths within the directory
 		const paths = await api.readDirectory(directoryPath);
+
+		console.log('PPP', paths);
 
 		// if the directory has child directories, transform them as well
 		// this allows us to do thru the entire file system tree
@@ -331,6 +335,8 @@ const repomod: Repomod = {
 				path,
 				options,
 			}));
+
+		console.log('PATHS', paths);
 
 		// find a path with a basename "index.html"
 		// there will be either one or none
@@ -419,9 +425,14 @@ const repomod: Repomod = {
 
 import { Volume } from 'memfs';
 
-const vol = Volume.fromJSON({ '/foo': 'bar' });
+const vol = Volume.fromJSON({});
+
+vol.mkdirSync('/test');
+vol.writeFileSync('/test/index.html', 'aaa', {});
 
 const ffs = new FacadeFileSystem(vol as any);
 const api = buildApi(ffs, () => ({}));
 
-console.log(executeRepomod(api, repomod, '/', {}));
+executeRepomod(api, repomod, '/', {}).then((x) => {
+	console.log(x);
+});
