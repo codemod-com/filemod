@@ -48,7 +48,7 @@ export type DirectoryCommand = HandleDirectoryCommand | HandleFileCommand;
 export interface UpsertDataCommand {
 	readonly kind: 'upsertData';
 	readonly data: string;
-	readonly path: string; // TODO we can remove it and add from context at a later stageW
+	readonly path: string; // TODO we can remove it and add from context at a later stage
 }
 
 export interface NoopCommand {
