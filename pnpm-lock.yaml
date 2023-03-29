@@ -26,7 +26,7 @@ importers:
       turbo: 1.8.5
       typescript: 5.0.2
 
-  packages/repomod-engine:
+  packages/repomod-engine-api:
     specifiers:
       '@types/glob': 8.0.1
       '@vercel/ncc': ^0.36.0
