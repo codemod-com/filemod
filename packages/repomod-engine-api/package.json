@@ -1,0 +1,25 @@
+{
+	"name": "@intuita-inc/repomod-engine-api",
+	"version": "1.0.0",
+	"description": "",
+	"type": "module",
+	"exports": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"./dist",
+		"LICENSE",
+		"README.md",
+		"tsconfig.json"
+	],
+	"scripts": {
+		"build": "tsc"
+	},
+	"keywords": [],
+	"author": "Caartaa, Inc.",
+	"dependencies": {
+		"glob": "8.1.0"
+	},
+	"devDependencies": {
+		"@types/glob": "8.0.1"
+	}
+}

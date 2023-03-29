@@ -1,0 +1,28 @@
+{
+	"name": "repomod-engine-monorepo",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"build": "turbo build",
+		"lint:eslint:check": "eslint . --no-color",
+		"lint:prettier:check": "prettier . --check --no-color ",
+		"lint:eslint:write": "eslint . --fix",
+		"lint:prettier:write": "prettier --write .",
+		"test": "turbo test"
+	},
+	"keywords": [],
+	"author": "Caartaa, Inc.",
+	"devDependencies": {
+		"@types/node": "^18.15.10",
+		"@typescript-eslint/eslint-plugin": "^5.56.0",
+		"@typescript-eslint/parser": "^5.56.0",
+		"eslint": "^8.36.0",
+		"eslint-config-prettier": "^8.8.0",
+		"eslint-plugin-prettier": "^4.2.1",
+		"prettier": "^2.8.7",
+		"ts-node": "^10.9.1",
+		"turbo": "^1.8.5",
+		"typescript": "^5.0.2"
+	}
+}
