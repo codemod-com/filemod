@@ -4,13 +4,15 @@ import {
 	buildApi,
 	executeRepomod,
 } from '@intuita-inc/repomod-engine-api';
-import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api/dist/files';
-import { FileSystemManager } from '@intuita-inc/repomod-engine-api/dist/fileSystemManager';
+import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api';
+import { FileSystemManager } from '@intuita-inc/repomod-engine-api';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import * as fs from 'node:fs';
-import * as htmlparser2 from 'htmlparser2';
-import j, { JSXElement } from 'jscodeshift';
-import { join } from 'node:path';
+// import * as htmlparser2 from 'htmlparser2';
+import j from 'jscodeshift';
+// import { join } from 'node:path';
+// import HTMLtoJSX from 'htmltojsx';
+// import { unified } from 'unified';
 
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
@@ -53,65 +55,69 @@ const repomod: Repomod = {
 	handleData: async (_, path, __, options) => {
 		const index_html_data = options['index_html_data'] ?? '';
 
-		type Node = {
-			// parent: Node | null;
-			name: string;
-			children: Node[];
-		};
+		// type Node = {
+		// 	name: string;
+		// 	children: Node[];
+		// };
 
-		let rootNode: Node | null = null;
-		let currentNode: Node | null = null;
+		// let rootNode: Node | null = null;
+		// let currentNode: Node | null = null;
 
-		const parser = new htmlparser2.Parser({
-			onopentag: (name) => {
-				const node: Node = {
-					// parent: currentNode,
-					name,
-					children: [],
-				};
+		// const parser = new htmlparser2.Parser({
+		// 	onopentag: (name) => {
+		// 		const node: Node = {
+		// 			// parent: currentNode,
+		// 			name,
+		// 			children: [],
+		// 		};
 
-				if (currentNode) {
-					currentNode.children.push(node);
-				}
+		// 		if (currentNode) {
+		// 			currentNode.children.push(node);
+		// 		}
 
-				currentNode = node;
+		// 		currentNode = node;
 
-				if (!rootNode) {
-					rootNode = node;
-				}
+		// 		if (!rootNode) {
+		// 			rootNode = node;
+		// 		}
+		// 	},
+		// });
+		// parser.write(index_html_data);
+		// parser.end();
 
-				// if (name === 'html') {
-
-				// 	const jsxElement = j.jsxElement(
-				// 		j.jsxOpeningElement(j.jsxIdentifier(name)),
-				// 		j.jsxClosingElement(j.jsxIdentifier(name)),
-				// 	);
-
-				// 	programPath.value.body.push(
-				// 		j.expressionStatement(jsxElement),
-				// 	);
-				// }
-			},
-		});
-		parser.write(index_html_data);
-		parser.end();
-
-		console.log(rootNode);
+		// console.log(rootNode);
 
 		const root = j('');
-		const programPath = root.find(j.Program).paths()[0]!;
+		// const programPath = root.find(j.Program).paths()[0]!;
 
-		const printNode = (node: Node): JSXElement => {
-			return j.jsxElement(
-				j.jsxOpeningElement(j.jsxIdentifier(node.name)),
-				j.jsxClosingElement(j.jsxIdentifier(node.name)),
-				node.children.map((child) => printNode(child)),
-			);
-		};
+		// const printNode = (node: Node): JSXElement => {
+		// 	return j.jsxElement(
+		// 		j.jsxOpeningElement(j.jsxIdentifier(node.name)),
+		// 		j.jsxClosingElement(j.jsxIdentifier(node.name)),
+		// 		node.children.map((child) => printNode(child)),
+		// 	);
+		// };
 
-		const rootJsxElement = printNode(rootNode!);
+		// const rootJsxElement = printNode(rootNode!);
 
-		programPath.value.body.push(j.expressionStatement(rootJsxElement));
+		// programPath.value.body.push(j.expressionStatement(rootJsxElement));
+
+		// const h = new HTMLtoJSX({ createClass: true, outputClassName: 'a' });
+
+		// console.log(h.convert(index_html_data));
+
+		// const rehypeParse = await import('rehype-parse');
+
+		// const x = unified().use(rehypeParse()).parse(index_html_data);
+
+		// console.log(x);
+		const { h } = await import('hastscript');
+		// @ts-ignore aaa
+		const toJsx = await import('@mapbox/hast-util-to-jsx');
+		const tree = h(index_html_data);
+
+		// console.log(1);
+		console.log(toJsx(tree));
 
 		return Promise.resolve({
 			kind: 'upsertData',
@@ -139,13 +145,20 @@ const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
 
 const ffs = new FacadeFileSystem(fs, fileSystemManager);
 const api = buildApi(ffs, () => ({
-	parseDocument: htmlparser2.parseDocument,
+	// parseDocument: htmlparser2.parseDocument,
 }));
 
-executeRepomod(api, repomod, join(__dirname, '..'), {})
+executeRepomod(
+	api,
+	repomod,
+	'/intuita/repomod-engine/packages/repomod-engine-tests/',
+	{},
+)
 	.then((x) => {
 		console.log(x);
 	})
 	.catch((err) => {
 		console.error(err);
 	});
+
+// export {};

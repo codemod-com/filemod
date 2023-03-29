@@ -3,6 +3,8 @@
 	"include": ["./src"],
 	"exclude": ["./dist", "./build", "./node_modules"],
 	"compilerOptions": {
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
 		"types": ["node"],
 		"target": "es2015",
 		"declaration": true,

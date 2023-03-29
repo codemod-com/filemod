@@ -1,6 +1,7 @@
 import * as platformPath from 'node:path';
-import { ExternalFileCommand } from './externalFileCommands';
-import { FacadeFileSystem } from './files';
+import { ExternalFileCommand } from './externalFileCommands.js';
+import { FacadeFileSystem } from './files.js';
+import { FileSystemManager } from './fileSystemManager.js';
 
 type Options = Readonly<Record<string, string | undefined>>;
 
@@ -308,3 +309,5 @@ export const executeRepomod = async (
 
 	return api.facadeFileSystem.buildExternalFileCommands();
 };
+
+export { FacadeFileSystem, FileSystemManager };
