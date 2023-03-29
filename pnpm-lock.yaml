@@ -41,6 +41,7 @@ importers:
     specifiers:
       '@intuita-inc/repomod-engine-api': workspace:repomod-engine-api
       '@mapbox/hast-util-to-jsx': ^2.0.0
+      '@svgr/hast-util-to-babel-ast': ^7.0.0
       '@types/htmltojsx': ^0.0.30
       '@types/jscodeshift': ^0.11.6
       hastscript: ^7.2.0
@@ -53,6 +54,7 @@ importers:
     dependencies:
       '@intuita-inc/repomod-engine-api': link:../repomod-engine-api
       '@mapbox/hast-util-to-jsx': 2.0.0
+      '@svgr/hast-util-to-babel-ast': 7.0.0
       hastscript: 7.2.0
       htmlparser2: 8.0.2
       htmltojsx: 0.3.0
@@ -628,6 +630,14 @@ packages:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.15.0
     dev: true
+
+  /@svgr/hast-util-to-babel-ast/7.0.0:
+    resolution: {integrity: sha512-42Ej9sDDEmsJKjrfQ1PHmiDiHagh/u9AHO9QWbeNx4KmD9yS5d1XHmXUNINfUcykAU+4431Cn+k6Vn5mWBYimQ==}
+    engines: {node: '>=14'}
+    dependencies:
+      '@babel/types': 7.21.3
+      entities: 4.4.0
+    dev: false
 
   /@tsconfig/node10/1.0.9:
     resolution: {integrity: sha512-jNsYVVxU8v5g43Erja32laIDHXeoNvFEpX33OK4d6hljo3jDhCBDhx5dhCCTMWUojscpAagGiRkBKxpdl9fxqA==}

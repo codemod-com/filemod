@@ -12,7 +12,10 @@ import * as fs from 'node:fs';
 import j from 'jscodeshift';
 // import { join } from 'node:path';
 // import HTMLtoJSX from 'htmltojsx';
-// import { unified } from 'unified';
+import rehypeParse from 'rehype-parse';
+import { unified } from 'unified';
+// import { h } from 'hastscript';
+import hastToBabelAst from '@svgr/hast-util-to-babel-ast';
 
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
@@ -88,7 +91,7 @@ const repomod: Repomod = {
 		// console.log(rootNode);
 
 		const root = j('');
-		// const programPath = root.find(j.Program).paths()[0]!;
+		const programPath = root.find(j.Program).paths()[0]!;
 
 		// const printNode = (node: Node): JSXElement => {
 		// 	return j.jsxElement(
@@ -108,16 +111,26 @@ const repomod: Repomod = {
 
 		// const rehypeParse = await import('rehype-parse');
 
-		// const x = unified().use(rehypeParse()).parse(index_html_data);
+		const x = unified().use(rehypeParse).parse(index_html_data);
 
-		// console.log(x);
-		const { h } = await import('hastscript');
-		// @ts-ignore aaa
-		const toJsx = await import('@mapbox/hast-util-to-jsx');
-		const tree = h(index_html_data);
+		console.log(x);
 
-		// console.log(1);
-		console.log(toJsx(tree));
+		x.children = x.children.filter((child) => child.type !== 'doctype');
+
+		// const toJsx = await import('@mapbox/hast-util-to-jsx');
+		// const tree = h(index_html_data);
+
+		// hastToBabelAst.default();
+
+		// const x = hastToBabelAst(tree);
+
+		// @ts-expect-error
+		const y: ReturnType<typeof hastToBabelAst.default> = hastToBabelAst(x);
+
+		for (const statement of y.body) {
+			// @ts-expect-error
+			programPath.value.body.push(statement);
+		}
 
 		return Promise.resolve({
 			kind: 'upsertData',

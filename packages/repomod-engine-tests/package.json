@@ -12,6 +12,7 @@
 	"dependencies": {
 		"@intuita-inc/repomod-engine-api": "workspace:repomod-engine-api",
 		"@mapbox/hast-util-to-jsx": "^2.0.0",
+		"@svgr/hast-util-to-babel-ast": "^7.0.0",
 		"hastscript": "^7.2.0",
 		"htmlparser2": "^8.0.2",
 		"htmltojsx": "^0.3.0",
