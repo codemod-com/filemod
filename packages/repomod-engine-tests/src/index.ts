@@ -9,7 +9,8 @@ import { FileSystemManager } from '@intuita-inc/repomod-engine-api/dist/fileSyst
 import { readdir, readFile, stat } from 'node:fs/promises';
 import * as fs from 'node:fs';
 import * as htmlparser2 from 'htmlparser2';
-import * from 'jscodeshift';
+import j from 'jscodeshift';
+import { join } from 'node:path';
 
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
@@ -24,10 +25,6 @@ const repomod: Repomod = {
 
 		const dirname = api.getDirname(index_html_path);
 		const document_tsx_path = api.joinPaths(dirname, 'Document.tsx');
-
-		// if (!api.exists(document_tsx_path)) {
-		// 	return [];
-		// }
 
 		// this operation will call the file system and cache the file content
 		const index_html_data = await api.readFile(path);
@@ -56,7 +53,7 @@ const repomod: Repomod = {
 	handleData: async (_, path, __, options) => {
 		const index_html_data = options['index_html_data'] ?? '';
 
-		const j = 
+		const root = j('');
 
 		const parser = new htmlparser2.Parser({
 			onopentag: (name) => {
@@ -69,7 +66,7 @@ const repomod: Repomod = {
 		return Promise.resolve({
 			kind: 'upsertData',
 			path,
-			data: index_html_data,
+			data: root.toSource(),
 		});
 	},
 };
@@ -95,7 +92,7 @@ const api = buildApi(ffs, () => ({
 	parseDocument: htmlparser2.parseDocument,
 }));
 
-executeRepomod(api, repomod, __dirname, {})
+executeRepomod(api, repomod, join(__dirname, '..'), {})
 	.then((x) => {
 		console.log(x);
 	})
