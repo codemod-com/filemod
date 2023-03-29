@@ -1,5 +1,4 @@
 import * as fs from 'node:fs';
-import * as f from 'node:fs/promises';
 
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash';
@@ -7,6 +6,7 @@ import { LeftRightHashSetManager } from './leftRightHashSetManager';
 import glob from 'glob';
 import { promisify } from 'node:util';
 import { ExternalFileCommand } from './externalFileCommands';
+import { FileSystemManager } from './fileSystemManager';
 
 const promisifiedGlob = promisify(glob);
 
@@ -36,7 +36,10 @@ export class FacadeFileSystem {
 	private __facadeEntries = new Map<PathHashDigest, FacadeEntry>();
 	private __changes = new Map<PathHashDigest, string | null>();
 
-	public constructor(private __realFileSystem: typeof fs) {}
+	public constructor(
+		private __realFileSystem: typeof fs,
+		private __fileSystemManager: FileSystemManager,
+	) {}
 
 	public async upsertFacadeEntry(path: string): Promise<FacadeEntry | null> {
 		const facadeDirectory = await this.upsertFacadeDirectory(path);
@@ -54,9 +57,9 @@ export class FacadeFileSystem {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		if (!this.__facadeEntries.has(directoryPathHashDigest)) {
-			const promisifiedStat = promisify(this.__realFileSystem.stat);
-
-			const stats = await promisifiedStat(directoryPath);
+			const stats = await this.__fileSystemManager.promisifiedStat(
+				directoryPath,
+			);
 
 			if (!stats.isDirectory()) {
 				return null;
@@ -81,9 +84,9 @@ export class FacadeFileSystem {
 		const filePathHashDigest = buildPathHashDigest(filePath);
 
 		if (!this.__facadeEntries.has(filePathHashDigest)) {
-			const promisifiedStat = promisify(this.__realFileSystem.stat);
-
-			const stats = await promisifiedStat(filePath);
+			const stats = await this.__fileSystemManager.promisifiedStat(
+				filePath,
+			);
 
 			if (!stats.isFile()) {
 				return null;
