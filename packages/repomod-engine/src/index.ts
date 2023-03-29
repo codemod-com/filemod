@@ -1,7 +1,6 @@
 import * as platformPath from 'node:path';
 import { ExternalFileCommand } from './externalFileCommands';
 import { FacadeFileSystem } from './files';
-import { readdir, readFile, stat } from 'node:fs/promises';
 
 type Options = Readonly<Record<string, string | undefined>>;
 
@@ -376,7 +375,11 @@ vol.writeFileSync('/test/Document.tsx', 'bbb', {});
 vol.writeFileSync('/a/b/c/Document.tsx', 'bbb', {});
 vol.writeFileSync('/a/b/c/index.html', 'bbb', {});
 
-const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
+const fileSystemManager = new FileSystemManager(
+	vol.promises.readdir as any,
+	vol.promises.readFile as any,
+	vol.promises.stat as any,
+);
 
 const ffs = new FacadeFileSystem(vol as any, fileSystemManager);
 const api = buildApi(ffs, () => ({}));
