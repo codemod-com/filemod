@@ -4,7 +4,7 @@ import {
 	buildApi,
 	executeRepomod,
 } from '@intuita-inc/repomod-engine-api';
-import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api';
+import { UnifiedFileSystem } from '@intuita-inc/repomod-engine-api';
 import { FileSystemManager } from '@intuita-inc/repomod-engine-api';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import * as fs from 'node:fs';
@@ -190,7 +190,7 @@ const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
 // vol.promises.readFile as any,
 // vol.promises.stat as any,
 
-const ffs = new FacadeFileSystem(fs, fileSystemManager);
+const ffs = new UnifiedFileSystem(fs, fileSystemManager);
 const api = buildApi<Dependencies>(ffs, () => ({
 	unified,
 	rehypeParse,

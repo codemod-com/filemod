@@ -1,6 +1,6 @@
 import * as platformPath from 'node:path';
 import { ExternalFileCommand } from './externalFileCommands.js';
-import { FacadeFileSystem } from './files.js';
+import { UnifiedFileSystem } from './unifiedFileSystem.js';
 import { FileSystemManager } from './fileSystemManager.js';
 
 type RSU = Record<string, unknown>;
@@ -111,7 +111,7 @@ export interface Repomod<D extends RSU> {
 }
 
 export interface API<D extends RSU> {
-	facadeFileSystem: FacadeFileSystem;
+	unifiedFileSystem: UnifiedFileSystem;
 	directoryAPI: DirectoryAPI<D>;
 	fileAPI: FileAPI<D>;
 	dataAPI: DataAPI<D>;
@@ -171,7 +171,7 @@ const handleCommand = async <D extends RSU>(
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
 		if (repomod.includePatterns) {
-			const paths = await api.facadeFileSystem.getFilePaths(
+			const paths = await api.unifiedFileSystem.getFilePaths(
 				command.path,
 				repomod.includePatterns,
 				repomod.excludePatterns ?? [],
@@ -188,11 +188,11 @@ const handleCommand = async <D extends RSU>(
 			}
 		}
 
-		const facadeEntry = await api.facadeFileSystem.upsertFacadeDirectory(
+		const unifiedEntry = await api.unifiedFileSystem.upsertUnifiedDirectory(
 			command.path,
 		);
 
-		if (facadeEntry === null) {
+		if (unifiedEntry === null) {
 			return;
 		}
 
@@ -211,11 +211,11 @@ const handleCommand = async <D extends RSU>(
 	}
 
 	if (command.kind === 'handleFile') {
-		const facadeEntry = await api.facadeFileSystem.upsertFacadeFile(
+		const unifiedEntry = await api.unifiedFileSystem.upsertUnifiedFile(
 			command.path,
 		);
 
-		if (facadeEntry === null) {
+		if (unifiedEntry === null) {
 			return;
 		}
 
@@ -233,7 +233,7 @@ const handleCommand = async <D extends RSU>(
 	}
 
 	if (command.kind === 'upsertFile') {
-		const data = await api.facadeFileSystem.readFile(command.path);
+		const data = await api.unifiedFileSystem.readFile(command.path);
 
 		const handleData = repomod.handleData ?? defaultHandleData;
 
@@ -248,16 +248,16 @@ const handleCommand = async <D extends RSU>(
 	}
 
 	if (command.kind === 'deleteFile') {
-		api.facadeFileSystem.deleteFile(command.path);
+		api.unifiedFileSystem.deleteFile(command.path);
 	}
 
 	if (command.kind === 'upsertData') {
-		api.facadeFileSystem.upsertData(command.path, command.data);
+		api.unifiedFileSystem.upsertData(command.path, command.data);
 	}
 };
 
 export const buildApi = <D extends RSU>(
-	facadeFileSystem: FacadeFileSystem,
+	unifiedFileSystem: UnifiedFileSystem,
 	getDependencies: DataAPI<D>['getDependencies'],
 ): API<D> => {
 	const pathAPI: PathAPI = {
@@ -272,10 +272,10 @@ export const buildApi = <D extends RSU>(
 	};
 
 	const directoryAPI: DirectoryAPI<D> = {
-		readDirectory: (path) => facadeFileSystem.readDirectory(path),
-		isDirectory: (path) => facadeFileSystem.isDirectory(path),
-		exists: (path) => facadeFileSystem.exists(path),
-		readFile: (path) => facadeFileSystem.readFile(path),
+		readDirectory: (path) => unifiedFileSystem.readDirectory(path),
+		isDirectory: (path) => unifiedFileSystem.isDirectory(path),
+		exists: (path) => unifiedFileSystem.exists(path),
+		readFile: (path) => unifiedFileSystem.readFile(path),
 		...dataAPI,
 	};
 
@@ -285,7 +285,7 @@ export const buildApi = <D extends RSU>(
 
 	return {
 		directoryAPI,
-		facadeFileSystem,
+		unifiedFileSystem,
 		fileAPI,
 		dataAPI,
 	};
@@ -297,22 +297,24 @@ export const executeRepomod = async <D extends RSU>(
 	path: string,
 	options: Options,
 ): Promise<readonly ExternalFileCommand[]> => {
-	const facadeEntry = await api.facadeFileSystem.upsertFacadeEntry(path);
+	const unifiedEntry = await api.unifiedFileSystem.upsertUnifiedEntry(path);
 
-	if (facadeEntry === null) {
+	if (unifiedEntry === null) {
 		return [];
 	}
 
 	const command: DirectoryCommand = {
 		kind:
-			facadeEntry.kind === 'directory' ? 'handleDirectory' : 'handleFile',
+			unifiedEntry.kind === 'directory'
+				? 'handleDirectory'
+				: 'handleFile',
 		path,
 		options,
 	};
 
 	await handleCommand(api, repomod, command);
 
-	return api.facadeFileSystem.buildExternalFileCommands();
+	return api.unifiedFileSystem.buildExternalFileCommands();
 };
 
-export { FacadeFileSystem, FileSystemManager };
+export { UnifiedFileSystem as UnifiedFileSystem, FileSystemManager };

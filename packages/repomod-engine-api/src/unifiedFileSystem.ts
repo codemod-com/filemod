@@ -1,5 +1,4 @@
 import * as fs from 'node:fs';
-
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash.js';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
@@ -10,17 +9,17 @@ import { FileSystemManager } from './fileSystemManager.js';
 
 const promisifiedGlob = promisify(glob);
 
-interface FacadeFile {
+interface UnifiedFile {
 	readonly kind: 'file';
 	readonly path: string;
 }
 
-interface FacadeDirectory {
+interface UnifiedDirectory {
 	readonly kind: 'directory';
 	readonly path: string;
 }
 
-type FacadeEntry = FacadeFile | FacadeDirectory;
+type UnifiedEntry = UnifiedFile | UnifiedDirectory;
 type PathHashDigest = string & {
 	__PathHashDigest: '__PathHashDigest';
 };
@@ -28,12 +27,12 @@ type PathHashDigest = string & {
 const buildPathHashDigest = (path: string): PathHashDigest =>
 	buildHashDigest(path) as PathHashDigest;
 
-export class FacadeFileSystem {
+export class UnifiedFileSystem {
 	private __directoryFiles = new LeftRightHashSetManager<
 		PathHashDigest,
 		PathHashDigest
 	>(new Set());
-	private __facadeEntries = new Map<PathHashDigest, FacadeEntry>();
+	private __entries = new Map<PathHashDigest, UnifiedEntry>();
 	private __changes = new Map<PathHashDigest, string | null>();
 
 	public constructor(
@@ -41,22 +40,24 @@ export class FacadeFileSystem {
 		private __fileSystemManager: FileSystemManager,
 	) {}
 
-	public async upsertFacadeEntry(path: string): Promise<FacadeEntry | null> {
-		const facadeDirectory = await this.upsertFacadeDirectory(path);
+	public async upsertUnifiedEntry(
+		path: string,
+	): Promise<UnifiedEntry | null> {
+		const unifiedDirectory = await this.upsertUnifiedDirectory(path);
 
-		if (facadeDirectory) {
-			return facadeDirectory;
+		if (unifiedDirectory) {
+			return unifiedDirectory;
 		}
 
-		return this.upsertFacadeFile(path);
+		return this.upsertUnifiedFile(path);
 	}
 
-	public async upsertFacadeDirectory(
+	public async upsertUnifiedDirectory(
 		directoryPath: string,
-	): Promise<FacadeEntry | null> {
+	): Promise<UnifiedEntry | null> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
-		if (!this.__facadeEntries.has(directoryPathHashDigest)) {
+		if (!this.__entries.has(directoryPathHashDigest)) {
 			const stats = await this.__fileSystemManager.promisifiedStat(
 				directoryPath,
 			);
@@ -65,25 +66,25 @@ export class FacadeFileSystem {
 				return null;
 			}
 
-			const facadeDirectory: FacadeDirectory = {
+			const unifiedDirectory: UnifiedDirectory = {
 				kind: 'directory',
 				path: directoryPath,
 			};
 
-			this.__facadeEntries.set(directoryPathHashDigest, facadeDirectory);
+			this.__entries.set(directoryPathHashDigest, unifiedDirectory);
 
-			return facadeDirectory;
+			return unifiedDirectory;
 		}
 
-		return this.__facadeEntries.get(directoryPathHashDigest) ?? null;
+		return this.__entries.get(directoryPathHashDigest) ?? null;
 	}
 
-	public async upsertFacadeFile(
+	public async upsertUnifiedFile(
 		filePath: string,
-	): Promise<FacadeEntry | null> {
+	): Promise<UnifiedEntry | null> {
 		const filePathHashDigest = buildPathHashDigest(filePath);
 
-		if (!this.__facadeEntries.has(filePathHashDigest)) {
+		if (!this.__entries.has(filePathHashDigest)) {
 			const stats = await this.__fileSystemManager.promisifiedStat(
 				filePath,
 			);
@@ -92,17 +93,17 @@ export class FacadeFileSystem {
 				return null;
 			}
 
-			const facadeFile: FacadeFile = {
+			const unifiedFile: UnifiedFile = {
 				kind: 'file',
 				path: filePath,
 			};
 
-			this.__facadeEntries.set(filePathHashDigest, facadeFile);
+			this.__entries.set(filePathHashDigest, unifiedFile);
 
-			return facadeFile;
+			return unifiedFile;
 		}
 
-		return this.__facadeEntries.get(filePathHashDigest) ?? null;
+		return this.__entries.get(filePathHashDigest) ?? null;
 	}
 
 	public async readDirectory(
@@ -122,7 +123,7 @@ export class FacadeFileSystem {
 			const pathHashDigest = buildPathHashDigest(entryPath);
 
 			if (entry.isDirectory()) {
-				const facadeEntry: FacadeEntry = {
+				const unifiedEntry: UnifiedEntry = {
 					kind: 'directory',
 					path: entryPath,
 				};
@@ -133,11 +134,11 @@ export class FacadeFileSystem {
 					directoryPathHashDigest,
 					pathHashDigest,
 				);
-				this.__facadeEntries.set(pathHashDigest, facadeEntry);
+				this.__entries.set(pathHashDigest, unifiedEntry);
 			}
 
 			if (entry.isFile()) {
-				const facadeEntry: FacadeEntry = {
+				const unifiedEntry: UnifiedEntry = {
 					kind: 'file',
 					path: entryPath,
 				};
@@ -148,7 +149,7 @@ export class FacadeFileSystem {
 					directoryPathHashDigest,
 					pathHashDigest,
 				);
-				this.__facadeEntries.set(pathHashDigest, facadeEntry);
+				this.__entries.set(pathHashDigest, unifiedEntry);
 			}
 		});
 
@@ -157,10 +158,10 @@ export class FacadeFileSystem {
 		this.__directoryFiles
 			.getRightHashesByLeftHash(directoryPathHashDigest)
 			.forEach((pathHashDigest) => {
-				const facadeEntry = this.__facadeEntries.get(pathHashDigest);
+				const unifiedEntry = this.__entries.get(pathHashDigest);
 
-				if (facadeEntry !== undefined) {
-					paths.push(facadeEntry.path);
+				if (unifiedEntry !== undefined) {
+					paths.push(unifiedEntry.path);
 				}
 			});
 
@@ -196,15 +197,14 @@ export class FacadeFileSystem {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		return (
-			this.__facadeEntries.get(directoryPathHashDigest)?.kind ===
-			'directory'
+			this.__entries.get(directoryPathHashDigest)?.kind === 'directory'
 		);
 	}
 
 	public exists(directoryPath: string): boolean {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
-		return this.__facadeEntries.has(directoryPathHashDigest);
+		return this.__entries.has(directoryPathHashDigest);
 	}
 
 	public async getFilePaths(
@@ -220,14 +220,14 @@ export class FacadeFileSystem {
 		});
 
 		paths.forEach((path) => {
-			const facadeFile: FacadeFile = {
+			const unifiedFile: UnifiedFile = {
 				kind: 'file',
 				path,
 			};
 
 			const pathHashDigest = buildPathHashDigest(path);
 
-			this.__facadeEntries.set(pathHashDigest, facadeFile);
+			this.__entries.set(pathHashDigest, unifiedFile);
 		});
 
 		return paths;
@@ -236,24 +236,24 @@ export class FacadeFileSystem {
 	public deleteFile(filePath: string): void {
 		const pathHashDigest = buildPathHashDigest(filePath);
 
-		const facadeFile: FacadeFile = {
+		const unifiedFile: UnifiedFile = {
 			kind: 'file',
 			path: filePath,
 		};
 
-		this.__facadeEntries.set(pathHashDigest, facadeFile);
+		this.__entries.set(pathHashDigest, unifiedFile);
 		this.__changes.set(pathHashDigest, null);
 	}
 
 	public upsertData(filePath: string, data: string): void {
 		const pathHashDigest = buildPathHashDigest(filePath);
 
-		const facadeFile: FacadeFile = {
+		const unifiedFile: UnifiedFile = {
 			kind: 'file',
 			path: filePath,
 		};
 
-		this.__facadeEntries.set(pathHashDigest, facadeFile);
+		this.__entries.set(pathHashDigest, unifiedFile);
 
 		this.__changes.set(pathHashDigest, data);
 	}
@@ -262,7 +262,7 @@ export class FacadeFileSystem {
 		const commands: ExternalFileCommand[] = [];
 
 		this.__changes.forEach((data, hashDigest) => {
-			const entry = this.__facadeEntries.get(hashDigest);
+			const entry = this.__entries.get(hashDigest);
 
 			if (entry && data === null) {
 				commands.push({
