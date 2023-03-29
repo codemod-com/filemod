@@ -3,9 +3,9 @@ import { RSU } from './options.js';
 import { UnifiedFileSystem } from './unifiedFileSystem.js';
 
 export interface PathAPI {
-	readonly getDirname: (path: string) => string; // might throw
-	readonly getBasename: (path: string) => string; // might throw
-	readonly joinPaths: (...paths: string[]) => string; // might throw
+	readonly getDirname: (path: string) => string;
+	readonly getBasename: (path: string) => string;
+	readonly joinPaths: (...paths: string[]) => string;
 }
 
 export interface DataAPI<D extends RSU> extends PathAPI {
