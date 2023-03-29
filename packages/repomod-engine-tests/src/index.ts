@@ -78,6 +78,37 @@ const repomod: Repomod = {
 			// @ts-expect-error default import issues
 			hastToBabelAst(hast);
 
+		const jsxRoot = j(program);
+
+		jsxRoot
+			.find(j.JSXElement, {
+				type: 'JSXElement',
+				openingElement: {
+					type: 'JSXOpeningElement',
+					name: {
+						type: 'JSXIdentifier',
+						name: 'div',
+					},
+					attributes: [
+						{
+							type: 'JSXAttribute',
+							name: {
+								// type: 'JSXIdentifier',
+								name: 'id',
+							},
+							value: {
+								// type: 'StringLiteral',
+								value: 'redwood-app',
+							},
+						},
+					],
+				},
+			})
+			.replaceWith((node) => ({
+				...node.value,
+				children: [j.jsxExpressionContainer(j.identifier('children'))],
+			}));
+
 		root.find(j.ReturnStatement).replaceWith((node) => {
 			const [firstExpression] = program.body;
 
@@ -95,6 +126,8 @@ const repomod: Repomod = {
 
 		// 	programPath.value.body.push(statement);
 		// }
+
+		console.log(root.toSource());
 
 		return Promise.resolve({
 			kind: 'upsertData',
