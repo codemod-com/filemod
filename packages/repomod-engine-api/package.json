@@ -19,12 +19,10 @@
     "keywords": [],
     "author": "Caartaa, Inc.",
     "dependencies": {
-        "@types/glob": "8.0.1",
-        "glob": "8.1.0",
-        "memfs": "3.4.13",
-        "ts-node": "^10.9.1"
+        "glob": "8.1.0"
     },
     "devDependencies": {
+        "@types/glob": "8.0.1",
         "@vercel/ncc": "^0.36.0"
     },
     "license": "Apache License, Version 2.0"
