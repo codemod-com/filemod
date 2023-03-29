@@ -1,4 +1,6 @@
 import * as fs from 'node:fs';
+import * as f from 'node:fs/promises';
+
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash';
 import { LeftRightHashSetManager } from './leftRightHashSetManager';
