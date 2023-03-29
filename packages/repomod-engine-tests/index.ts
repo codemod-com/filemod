@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import {
 	Repomod,
 	buildApi,
@@ -7,6 +8,8 @@ import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api/dist/files';
 import { FileSystemManager } from '@intuita-inc/repomod-engine-api/dist/fileSystemManager';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import * as fs from 'node:fs';
+import * as htmlparser2 from 'htmlparser2';
+import * from 'jscodeshift';
 
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
@@ -53,6 +56,16 @@ const repomod: Repomod = {
 	handleData: async (_, path, __, options) => {
 		const index_html_data = options['index_html_data'] ?? '';
 
+		const j = 
+
+		const parser = new htmlparser2.Parser({
+			onopentag: (name) => {
+				console.log(name);
+			},
+		});
+		parser.write(index_html_data);
+		parser.end();
+
 		return Promise.resolve({
 			kind: 'upsertData',
 			path,
@@ -78,7 +91,9 @@ const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
 // vol.promises.stat as any,
 
 const ffs = new FacadeFileSystem(fs, fileSystemManager);
-const api = buildApi(ffs, () => ({}));
+const api = buildApi(ffs, () => ({
+	parseDocument: htmlparser2.parseDocument,
+}));
 
 executeRepomod(api, repomod, __dirname, {})
 	.then((x) => {

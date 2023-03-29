@@ -10,5 +10,8 @@
 		"jscodeshift": "^0.14.0",
 		"memfs": "3.4.13"
 	},
-	"license": "Apache License, Version 2.0"
+	"license": "Apache License, Version 2.0",
+	"devDependencies": {
+		"@types/jscodeshift": "^0.11.6"
+	}
 }
