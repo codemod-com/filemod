@@ -69,18 +69,18 @@ export interface PathAPI {
 	readonly joinPaths: (...paths: string[]) => string; // might throw
 }
 
-interface DataAPI extends PathAPI {
+export interface DataAPI extends PathAPI {
 	getDependencies: () => Record<string, unknown>;
 }
 
-interface FileAPI extends PathAPI, DataAPI {
+export interface FileAPI extends PathAPI, DataAPI {
 	readonly isDirectory: (path: string) => boolean;
 	readonly exists: (path: string) => boolean;
 	// reading directories and files
 	readonly readFile: (filePath: string) => Promise<string>;
 }
 
-interface DirectoryAPI extends FileAPI {
+export interface DirectoryAPI extends FileAPI {
 	readonly readDirectory: (
 		directoryPath: string,
 	) => Promise<readonly string[]>; // might throw

@@ -1,4 +1,6 @@
-import { Repomod } from '@intuita-inc/repomod-engine-api';
+import { Repomod, FileAPI } from '@intuita-inc/repomod-engine-api';
+import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api/dist/files';
+import { FileSystemManager } from '@intuita-inc/repomod-engine-api/dist/fileSystemManager';
 
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
@@ -53,7 +55,6 @@ const repomod: Repomod = {
 };
 
 import { Volume } from 'memfs';
-import { FileSystemManager } from './fileSystemManager';
 
 const vol = Volume.fromJSON({});
 
