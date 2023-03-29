@@ -105,7 +105,9 @@ export class FacadeFileSystem {
 	): Promise<readonly string[]> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
-		const dirents = this.__realFileSystem.readdirSync(directoryPath, {
+		const promisifiedReaddir = promisify(this.__realFileSystem.readdir);
+
+		const dirents = await promisifiedReaddir(directoryPath, {
 			withFileTypes: true,
 		});
 
