@@ -8,13 +8,9 @@ import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api';
 import { FileSystemManager } from '@intuita-inc/repomod-engine-api';
 import { readdir, readFile, stat } from 'node:fs/promises';
 import * as fs from 'node:fs';
-// import * as htmlparser2 from 'htmlparser2';
-import j from 'jscodeshift';
-// import { join } from 'node:path';
-// import HTMLtoJSX from 'htmltojsx';
+import j, { Program } from 'jscodeshift';
 import rehypeParse from 'rehype-parse';
 import { unified } from 'unified';
-// import { h } from 'hastscript';
 import hastToBabelAst from '@svgr/hast-util-to-babel-ast';
 
 const repomod: Repomod = {
@@ -58,77 +54,20 @@ const repomod: Repomod = {
 	handleData: async (_, path, __, options) => {
 		const index_html_data = options['index_html_data'] ?? '';
 
-		// type Node = {
-		// 	name: string;
-		// 	children: Node[];
-		// };
-
-		// let rootNode: Node | null = null;
-		// let currentNode: Node | null = null;
-
-		// const parser = new htmlparser2.Parser({
-		// 	onopentag: (name) => {
-		// 		const node: Node = {
-		// 			// parent: currentNode,
-		// 			name,
-		// 			children: [],
-		// 		};
-
-		// 		if (currentNode) {
-		// 			currentNode.children.push(node);
-		// 		}
-
-		// 		currentNode = node;
-
-		// 		if (!rootNode) {
-		// 			rootNode = node;
-		// 		}
-		// 	},
-		// });
-		// parser.write(index_html_data);
-		// parser.end();
-
-		// console.log(rootNode);
-
 		const root = j('');
 		const programPath = root.find(j.Program).paths()[0]!;
 
-		// const printNode = (node: Node): JSXElement => {
-		// 	return j.jsxElement(
-		// 		j.jsxOpeningElement(j.jsxIdentifier(node.name)),
-		// 		j.jsxClosingElement(j.jsxIdentifier(node.name)),
-		// 		node.children.map((child) => printNode(child)),
-		// 	);
-		// };
+		const hast = unified().use(rehypeParse).parse(index_html_data);
 
-		// const rootJsxElement = printNode(rootNode!);
+		hast.children = hast.children.filter(
+			(child) => child.type !== 'doctype',
+		);
 
-		// programPath.value.body.push(j.expressionStatement(rootJsxElement));
+		const program: Program =
+			// @ts-expect-error default import issues
+			hastToBabelAst(hast);
 
-		// const h = new HTMLtoJSX({ createClass: true, outputClassName: 'a' });
-
-		// console.log(h.convert(index_html_data));
-
-		// const rehypeParse = await import('rehype-parse');
-
-		const x = unified().use(rehypeParse).parse(index_html_data);
-
-		console.log(x);
-
-		x.children = x.children.filter((child) => child.type !== 'doctype');
-
-		// const toJsx = await import('@mapbox/hast-util-to-jsx');
-		// const tree = h(index_html_data);
-
-		// hastToBabelAst.default();
-
-		// const x = hastToBabelAst(tree);
-
-		// @ts-expect-error
-		const y: ReturnType<typeof hastToBabelAst.default> = hastToBabelAst(x);
-
-		for (const statement of y.body) {
-			// @ts-expect-error
+		for (const statement of program.body) {
 			programPath.value.body.push(statement);
 		}
 
