@@ -4,6 +4,8 @@
     "description": "",
     "keywords": [],
     "author": "Caartaa, Inc.",
-    "devDependencies": {},
+    "dependencies": {
+        "memfs": "3.4.13"
+    },
     "license": "Apache License, Version 2.0"
 }
