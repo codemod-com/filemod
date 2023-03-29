@@ -5,9 +5,12 @@ import {
 } from '@intuita-inc/repomod-engine-api';
 import { FacadeFileSystem } from '@intuita-inc/repomod-engine-api/dist/files';
 import { FileSystemManager } from '@intuita-inc/repomod-engine-api/dist/fileSystemManager';
+import { readdir, readFile, stat } from 'node:fs/promises';
+import * as fs from 'node:fs';
 
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
+	excludePatterns: ['**/node_modules'],
 	handleFile: async (api, path: string, options) => {
 		// we process only index.html files here (in this mod)
 		if (api.getBasename(path) !== 'index.html') {
@@ -19,9 +22,9 @@ const repomod: Repomod = {
 		const dirname = api.getDirname(index_html_path);
 		const document_tsx_path = api.joinPaths(dirname, 'Document.tsx');
 
-		if (!api.exists(document_tsx_path)) {
-			return [];
-		}
+		// if (!api.exists(document_tsx_path)) {
+		// 	return [];
+		// }
 
 		// this operation will call the file system and cache the file content
 		const index_html_data = await api.readFile(path);
@@ -58,27 +61,26 @@ const repomod: Repomod = {
 	},
 };
 
-import { Volume } from 'memfs';
+// import { Volume } from 'memfs';
 
-const vol = Volume.fromJSON({});
+// const vol = Volume.fromJSON({});
 
-vol.mkdirSync('/test');
-vol.mkdirSync('/a/b/c', { recursive: true });
-vol.writeFileSync('/test/index.html', 'aaa', {});
-vol.writeFileSync('/test/Document.tsx', 'bbb', {});
-vol.writeFileSync('/a/b/c/Document.tsx', 'bbb', {});
-vol.writeFileSync('/a/b/c/index.html', 'bbb', {});
+// vol.mkdirSync('/test');
+// vol.mkdirSync('/a/b/c', { recursive: true });
+// vol.writeFileSync('/test/index.html', 'aaa', {});
+// vol.writeFileSync('/test/Document.tsx', 'bbb', {});
+// vol.writeFileSync('/a/b/c/Document.tsx', 'bbb', {});
+// vol.writeFileSync('/a/b/c/index.html', 'bbb', {});
 
-const fileSystemManager = new FileSystemManager(
-	vol.promises.readdir as any,
-	vol.promises.readFile as any,
-	vol.promises.stat as any,
-);
+const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
+// vol.promises.readdir as any,
+// vol.promises.readFile as any,
+// vol.promises.stat as any,
 
-const ffs = new FacadeFileSystem(vol as any, fileSystemManager);
+const ffs = new FacadeFileSystem(fs, fileSystemManager);
 const api = buildApi(ffs, () => ({}));
 
-executeRepomod(api, repomod, '/', {})
+executeRepomod(api, repomod, __dirname, {})
 	.then((x) => {
 		console.log(x);
 	})

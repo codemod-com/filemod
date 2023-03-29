@@ -173,9 +173,16 @@ export class FacadeFileSystem {
 		const upsertedData = this.__changes.get(pathHashDigest);
 
 		if (upsertedData === undefined) {
-			return this.__fileSystemManager.promisifiedReadFile(path, {
-				encoding: 'utf8',
-			});
+			try {
+				return await this.__fileSystemManager.promisifiedReadFile(
+					path,
+					{
+						encoding: 'utf8',
+					},
+				);
+			} catch (error) {
+				return '';
+			}
 		}
 
 		if (upsertedData === null) {

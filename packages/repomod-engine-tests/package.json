@@ -5,11 +5,10 @@
 	"keywords": [],
 	"author": "Caartaa, Inc.",
 	"dependencies": {
-		"memfs": "3.4.13",
-		"@intuita-inc/repomod-engine-api": "workspace:repomod-engine-api"
+		"@intuita-inc/repomod-engine-api": "workspace:repomod-engine-api",
+		"htmlparser2": "^8.0.2",
+		"jscodeshift": "^0.14.0",
+		"memfs": "3.4.13"
 	},
-    "devDependencies": {
-        
-    },
 	"license": "Apache License, Version 2.0"
 }
