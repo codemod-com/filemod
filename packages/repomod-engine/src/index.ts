@@ -1,6 +1,7 @@
 import * as platformPath from 'node:path';
 import { ExternalFileCommand } from './externalFileCommands';
 import { FacadeFileSystem } from './files';
+import { stat } from 'node:fs/promises';
 
 type Options = Readonly<Record<string, string | undefined>>;
 
@@ -182,7 +183,7 @@ const handleCommand = async (
 			}
 		}
 
-		const facadeEntry = api.facadeFileSystem.upsertFacadeDirectory(
+		const facadeEntry = await api.facadeFileSystem.upsertFacadeDirectory(
 			command.path,
 		);
 
@@ -242,11 +243,11 @@ const handleCommand = async (
 	}
 
 	if (command.kind === 'deleteFile') {
-		await api.facadeFileSystem.deleteFile(command.path);
+		api.facadeFileSystem.deleteFile(command.path);
 	}
 
 	if (command.kind === 'upsertData') {
-		await api.facadeFileSystem.upsertData(command.path, command.data);
+		api.facadeFileSystem.upsertData(command.path, command.data);
 	}
 };
 
@@ -366,6 +367,7 @@ const repomod: Repomod = {
 };
 
 import { Volume } from 'memfs';
+import { FileSystemManager } from './fileSystemManager';
 
 const vol = Volume.fromJSON({});
 
@@ -376,9 +378,15 @@ vol.writeFileSync('/test/Document.tsx', 'bbb', {});
 vol.writeFileSync('/a/b/c/Document.tsx', 'bbb', {});
 vol.writeFileSync('/a/b/c/index.html', 'bbb', {});
 
-const ffs = new FacadeFileSystem(vol as any);
+const fileSystemManager = new FileSystemManager(stat);
+
+const ffs = new FacadeFileSystem(vol as any, fileSystemManager);
 const api = buildApi(ffs, () => ({}));
 
-executeRepomod(api, repomod, '/', {}).then((x) => {
-	console.log(x);
-});
+executeRepomod(api, repomod, '/', {})
+	.then((x) => {
+		console.log(x);
+	})
+	.catch((err) => {
+		console.error(err);
+	});

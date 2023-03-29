@@ -225,7 +225,7 @@ export class FacadeFileSystem {
 		return paths;
 	}
 
-	public async deleteFile(filePath: string): Promise<void> {
+	public deleteFile(filePath: string): void {
 		const pathHashDigest = buildPathHashDigest(filePath);
 
 		const facadeFile: FacadeFile = {
@@ -237,7 +237,7 @@ export class FacadeFileSystem {
 		this.__changes.set(pathHashDigest, null);
 	}
 
-	public async upsertData(filePath: string, data: string): Promise<void> {
+	public upsertData(filePath: string, data: string): void {
 		const pathHashDigest = buildPathHashDigest(filePath);
 
 		const facadeFile: FacadeFile = {
@@ -253,7 +253,6 @@ export class FacadeFileSystem {
 	public buildExternalFileCommands(): readonly ExternalFileCommand[] {
 		const commands: ExternalFileCommand[] = [];
 
-		// TODO make it one structure (string or null) ?
 		this.__changes.forEach((data, hashDigest) => {
 			const entry = this.__facadeEntries.get(hashDigest);
 
