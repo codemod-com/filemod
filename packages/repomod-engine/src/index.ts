@@ -1,7 +1,7 @@
 import * as platformPath from 'node:path';
 import { ExternalFileCommand } from './externalFileCommands';
 import { FacadeFileSystem } from './files';
-import { stat } from 'node:fs/promises';
+import { readdir, readFile, stat } from 'node:fs/promises';
 
 type Options = Readonly<Record<string, string | undefined>>;
 
@@ -315,8 +315,6 @@ export const executeRepomod = async (
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
 	handleFile: async (api, path: string, options) => {
-		console.log('HF', api.getBasename(path));
-
 		// we process only index.html files here (in this mod)
 		if (api.getBasename(path) !== 'index.html') {
 			return []; // no commands
@@ -378,7 +376,7 @@ vol.writeFileSync('/test/Document.tsx', 'bbb', {});
 vol.writeFileSync('/a/b/c/Document.tsx', 'bbb', {});
 vol.writeFileSync('/a/b/c/index.html', 'bbb', {});
 
-const fileSystemManager = new FileSystemManager(stat);
+const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
 
 const ffs = new FacadeFileSystem(vol as any, fileSystemManager);
 const api = buildApi(ffs, () => ({}));
