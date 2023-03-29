@@ -54,8 +54,19 @@ const repomod: Repomod = {
 	handleData: async (_, path, __, options) => {
 		const index_html_data = options['index_html_data'] ?? '';
 
-		const root = j('');
-		const programPath = root.find(j.Program).paths()[0]!;
+		const root = j.withParser('tsx')(`
+			import React from 'react';
+
+			interface DocumentProps {
+				children: React.ReactNode;
+				css: string[]; // array of css import strings
+				meta?: string[];
+			}
+
+			export const Document = ({ children, css = [] }: DocumentProps) => {
+				return '#TODO replace with index.html contents';
+			}
+		`);
 
 		const hast = unified().use(rehypeParse).parse(index_html_data);
 
@@ -67,9 +78,23 @@ const repomod: Repomod = {
 			// @ts-expect-error default import issues
 			hastToBabelAst(hast);
 
-		for (const statement of program.body) {
-			programPath.value.body.push(statement);
-		}
+		root.find(j.ReturnStatement).replaceWith((node) => {
+			const [firstExpression] = program.body;
+
+			if (
+				!firstExpression ||
+				firstExpression.type !== 'ExpressionStatement'
+			) {
+				return node;
+			}
+
+			return j.returnStatement(firstExpression.expression);
+		});
+
+		// for (const statement of program.body) {
+
+		// 	programPath.value.body.push(statement);
+		// }
 
 		return Promise.resolve({
 			kind: 'upsertData',
