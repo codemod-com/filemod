@@ -110,9 +110,12 @@ export class FacadeFileSystem {
 	): Promise<readonly string[]> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
-		const dirents = await this.__fileSystemManager.promisifiedReaddir(directoryPath, {
-			withFileTypes: true,
-		});
+		const dirents = await this.__fileSystemManager.promisifiedReaddir(
+			directoryPath,
+			{
+				withFileTypes: true,
+			},
+		);
 
 		dirents.forEach((entry) => {
 			const entryPath = platformPath.join(directoryPath, entry.name);

@@ -1,3 +1,5 @@
+import { Repomod } from '@intuita-inc/repomod-engine-api';
+
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
 	handleFile: async (api, path: string, options) => {
@@ -40,7 +42,7 @@ const repomod: Repomod = {
 	},
 	// this function might not be called at all
 	handleData: async (_, path, __, options) => {
-		const index_html_data = options['index_html_data'] ?? '';
+		const index_html_data = options.index_html_data ?? '';
 
 		return Promise.resolve({
 			kind: 'upsertData',

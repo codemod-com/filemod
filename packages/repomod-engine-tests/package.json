@@ -1,11 +1,12 @@
 {
-    "name": "@intuita-inc/repomod-engine-tests",
-    "version": "1.0.0",
-    "description": "",
-    "keywords": [],
-    "author": "Caartaa, Inc.",
-    "dependencies": {
-        "memfs": "3.4.13"
-    },
-    "license": "Apache License, Version 2.0"
+	"name": "@intuita-inc/repomod-engine-tests",
+	"version": "1.0.0",
+	"description": "",
+	"keywords": [],
+	"author": "Caartaa, Inc.",
+	"dependencies": {
+		"memfs": "3.4.13",
+		"@intuita-inc/repomod-engine-api": "workspace:repomod-engine-api"
+	},
+	"license": "Apache License, Version 2.0"
 }
