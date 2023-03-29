@@ -4,6 +4,7 @@
 	"description": "",
 	"main": "index.js",
 	"scripts": {
+		"build": "turbo build",
 		"lint:eslint:check": "eslint . --no-color",
 		"lint:prettier:check": "prettier . --check --no-color ",
 		"lint:eslint:write": "eslint . --fix",
