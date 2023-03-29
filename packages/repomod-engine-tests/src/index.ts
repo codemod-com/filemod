@@ -109,6 +109,37 @@ const repomod: Repomod = {
 				children: [j.jsxExpressionContainer(j.identifier('children'))],
 			}));
 
+		jsxRoot
+			.find(j.JSXElement, {
+				type: 'JSXElement',
+				openingElement: {
+					type: 'JSXOpeningElement',
+					name: {
+						type: 'JSXIdentifier',
+						name: 'head',
+					},
+				},
+			})
+			.forEach((path) => {
+				const toInject = `
+				{css.map((cssLinks, index) => {
+					return (
+						<link
+							rel="stylesheet"
+							key={\`css-\${index}\`}
+							href={\`/\${cssLinks}\`}
+						/>
+					);
+				})}
+				`;
+
+				const collection = j(path).find(j.JSXElement).paths();
+
+				const p = collection[collection.length - 1];
+
+				p?.insertAfter(toInject);
+			});
+
 		root.find(j.ReturnStatement).replaceWith((node) => {
 			const [firstExpression] = program.body;
 
@@ -121,11 +152,6 @@ const repomod: Repomod = {
 
 			return j.returnStatement(firstExpression.expression);
 		});
-
-		// for (const statement of program.body) {
-
-		// 	programPath.value.body.push(statement);
-		// }
 
 		console.log(root.toSource());
 
