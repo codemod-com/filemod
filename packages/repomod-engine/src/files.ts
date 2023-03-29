@@ -52,11 +52,11 @@ export class FacadeFileSystem {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		if (!this.__facadeEntries.has(directoryPathHashDigest)) {
-			const stat = this.__realFileSystem.statSync(directoryPath, {
-				throwIfNoEntry: false,
-			});
+			const promisifiedStat = promisify(this.__realFileSystem.stat);
 
-			if (!stat || !stat.isDirectory()) {
+			const stats = await promisifiedStat(directoryPath);
+
+			if (!stats.isDirectory()) {
 				return null;
 			}
 
@@ -79,11 +79,11 @@ export class FacadeFileSystem {
 		const filePathHashDigest = buildPathHashDigest(filePath);
 
 		if (!this.__facadeEntries.has(filePathHashDigest)) {
-			const stat = this.__realFileSystem.statSync(filePath, {
-				throwIfNoEntry: false,
-			});
+			const promisifiedStat = promisify(this.__realFileSystem.stat);
 
-			if (!stat || !stat.isFile()) {
+			const stats = await promisifiedStat(filePath);
+
+			if (!stats.isFile()) {
 				return null;
 			}
 
@@ -102,7 +102,7 @@ export class FacadeFileSystem {
 
 	public async readDirectory(
 		directoryPath: string,
-	): Promise<ReadonlyArray<string>> {
+	): Promise<readonly string[]> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		const dirents = this.__realFileSystem.readdirSync(directoryPath, {
@@ -194,9 +194,9 @@ export class FacadeFileSystem {
 
 	public async getFilePaths(
 		directoryPath: string,
-		includePatterns: ReadonlyArray<string>,
-		excludePatterns: ReadonlyArray<string>,
-	): Promise<ReadonlyArray<string>> {
+		includePatterns: readonly string[],
+		excludePatterns: readonly string[],
+	): Promise<readonly string[]> {
 		const paths = await promisifiedGlob(includePatterns[0] ?? '', {
 			absolute: true,
 			cwd: directoryPath,
@@ -243,7 +243,7 @@ export class FacadeFileSystem {
 		this.__changes.set(pathHashDigest, data);
 	}
 
-	public buildExternalFileCommands(): ReadonlyArray<ExternalFileCommand> {
+	public buildExternalFileCommands(): readonly ExternalFileCommand[] {
 		const commands: ExternalFileCommand[] = [];
 
 		// TODO make it one structure (string or null) ?
