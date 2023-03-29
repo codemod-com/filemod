@@ -83,22 +83,22 @@ interface FileAPI extends PathAPI, DataAPI {
 interface DirectoryAPI extends FileAPI {
 	readonly readDirectory: (
 		directoryPath: string,
-	) => Promise<ReadonlyArray<string>>; // might throw
+	) => Promise<readonly string[]>; // might throw
 }
 
 export interface Repomod {
-	readonly includePatterns?: ReadonlyArray<string>;
-	readonly excludePatterns?: ReadonlyArray<string>;
+	readonly includePatterns?: readonly string[];
+	readonly excludePatterns?: readonly string[];
 	readonly handleDirectory?: (
 		api: DirectoryAPI,
 		path: string,
 		options: Options,
-	) => Promise<ReadonlyArray<DirectoryCommand>>;
+	) => Promise<readonly DirectoryCommand[]>;
 	readonly handleFile?: (
 		api: FileAPI,
 		path: string,
 		options: Options,
-	) => Promise<ReadonlyArray<FileCommand>>;
+	) => Promise<readonly FileCommand[]>;
 	readonly handleData?: (
 		api: DataAPI,
 		path: string,
@@ -124,7 +124,7 @@ const defaultHandleDirectory: Repomod['handleDirectory'] = async (
 	const paths = await api.readDirectory(directoryPath);
 
 	for (const path of paths) {
-		const directory = await api.isDirectory(path);
+		const directory = api.isDirectory(path);
 
 		if (directory) {
 			commands.push({
@@ -144,27 +144,25 @@ const defaultHandleDirectory: Repomod['handleDirectory'] = async (
 	return commands;
 };
 
-const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) => {
-	return [
+const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) =>
+	Promise.resolve([
 		{
 			kind: 'upsertFile',
 			path,
 			options,
 		},
-	];
-};
+	]);
 
-const defaultHandleData: Repomod['handleData'] = async () => ({
-	kind: 'noop',
-});
+const defaultHandleData: Repomod['handleData'] = async () =>
+	Promise.resolve({
+		kind: 'noop',
+	});
 
 const handleCommand = async (
 	api: API,
 	repomod: Repomod,
 	command: Command,
 ): Promise<void> => {
-	console.log(command);
-
 	if (command.kind === 'handleDirectory') {
 		if (repomod.includePatterns) {
 			const paths = await api.facadeFileSystem.getFilePaths(
@@ -292,7 +290,7 @@ export const executeRepomod = async (
 	repomod: Repomod,
 	path: string,
 	options: Options,
-): Promise<ReadonlyArray<ExternalFileCommand>> => {
+): Promise<readonly ExternalFileCommand[]> => {
 	const facadeEntry = await api.facadeFileSystem.upsertFacadeEntry(path);
 
 	if (facadeEntry === null) {
@@ -314,60 +312,12 @@ export const executeRepomod = async (
 // tests
 
 const repomod: Repomod = {
-	// this function will be called at least for the root directory path
-	handleDirectory: async (
-		api: DirectoryAPI,
-		directoryPath: string,
-		options,
-	) => {
-		console.log('handleDirectory');
-		// paths contain all immediate file/directory paths within the directory
-		const paths = await api.readDirectory(directoryPath);
-
-		console.log('PPP', paths);
-
-		// if the directory has child directories, transform them as well
-		// this allows us to do thru the entire file system tree
-		const commands: DirectoryCommand[] = paths
-			.filter((path) => api.isDirectory(path))
-			.map((path) => ({
-				kind: 'handleDirectory',
-				path,
-				options,
-			}));
-
-		console.log('PATHS', paths);
-
-		// find a path with a basename "index.html"
-		// there will be either one or none
-		const index_html_path =
-			paths.find((path) => api.getBasename(path) === 'index.html') ??
-			null;
-
-		// transform `Document.tsx` only if it's a file and exists
-		if (index_html_path !== null && !api.isDirectory(index_html_path)) {
-			// const dirname = api.getDirname(index_html_path);
-			// // create a sibling path for an `index.html` file
-			// const document_tsx_path = api.joinPaths(dirname, 'Document.tsx');
-
-			// const hasDocumentTsxPath = paths.includes(document_tsx_path);
-
-			// if (!hasDocumentTsxPath) {
-			commands.push({
-				kind: 'handleFile',
-				path: index_html_path,
-				options,
-			});
-			// }
-		}
-
-		// the directory is processed, now the engine will process the following commands
-		return commands;
-	},
-	// this function might not be called by the engine if no files have been targeted for processing
+	includePatterns: ['**/*.index.html'],
 	handleFile: async (api, path: string, options) => {
+		console.log('HF', api.getBasename(path));
+
 		// we process only index.html files here (in this mod)
-		if (api.getBasename(path) === 'index.html') {
+		if (api.getBasename(path) !== 'index.html') {
 			return []; // no commands
 		}
 
@@ -376,16 +326,12 @@ const repomod: Repomod = {
 		const dirname = api.getDirname(index_html_path);
 		const document_tsx_path = api.joinPaths(dirname, 'Document.tsx');
 
-		if (!(await api.exists(document_tsx_path))) {
+		if (!api.exists(document_tsx_path)) {
 			return [];
 		}
 
 		// this operation will call the file system and cache the file content
 		const index_html_data = await api.readFile(path);
-
-		if (index_html_data == null) {
-			return [];
-		}
 
 		return [
 			{
@@ -408,18 +354,14 @@ const repomod: Repomod = {
 		];
 	},
 	// this function might not be called at all
-	handleData: async (api, path) => {
-		if (api.getBasename(path) === 'Document.tsx') {
-			return {
-				kind: 'noop',
-			};
-		}
+	handleData: async (_, path, __, options) => {
+		const index_html_data = options['index_html_data'] ?? '';
 
-		return {
+		return Promise.resolve({
 			kind: 'upsertData',
 			path,
-			data: 'test',
-		};
+			data: index_html_data,
+		});
 	},
 };
 
@@ -428,7 +370,11 @@ import { Volume } from 'memfs';
 const vol = Volume.fromJSON({});
 
 vol.mkdirSync('/test');
+vol.mkdirSync('/a/b/c', { recursive: true });
 vol.writeFileSync('/test/index.html', 'aaa', {});
+vol.writeFileSync('/test/Document.tsx', 'bbb', {});
+vol.writeFileSync('/a/b/c/Document.tsx', 'bbb', {});
+vol.writeFileSync('/a/b/c/index.html', 'bbb', {});
 
 const ffs = new FacadeFileSystem(vol as any);
 const api = buildApi(ffs, () => ({}));

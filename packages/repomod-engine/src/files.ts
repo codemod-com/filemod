@@ -105,8 +105,6 @@ export class FacadeFileSystem {
 	): Promise<ReadonlyArray<string>> {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
-		console.log(directoryPath);
-
 		const dirents = this.__realFileSystem.readdirSync(directoryPath, {
 			withFileTypes: true,
 		});
@@ -116,8 +114,6 @@ export class FacadeFileSystem {
 			const pathHashDigest = buildPathHashDigest(entryPath);
 
 			if (entry.isDirectory()) {
-				console.log('AAA', entry);
-
 				const facadeEntry: FacadeEntry = {
 					kind: 'directory',
 					path: entryPath,
@@ -183,13 +179,6 @@ export class FacadeFileSystem {
 
 	public isDirectory(directoryPath: string): boolean {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
-
-		console.log(
-			'isDirectory',
-			directoryPath,
-			this.__facadeEntries.get(directoryPathHashDigest)?.kind ===
-				'directory',
-		);
 
 		return (
 			this.__facadeEntries.get(directoryPathHashDigest)?.kind ===
