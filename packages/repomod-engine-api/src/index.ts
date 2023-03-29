@@ -3,6 +3,8 @@ import { ExternalFileCommand } from './externalFileCommands.js';
 import { FacadeFileSystem } from './files.js';
 import { FileSystemManager } from './fileSystemManager.js';
 
+type RSU = Record<string, unknown>;
+
 type Options = Readonly<Record<string, string | undefined>>;
 
 export interface UpsertFileCommand {
@@ -70,52 +72,53 @@ export interface PathAPI {
 	readonly joinPaths: (...paths: string[]) => string; // might throw
 }
 
-export interface DataAPI extends PathAPI {
-	getDependencies: () => Record<string, unknown>;
+export interface DataAPI<D extends RSU> extends PathAPI {
+	getDependencies: () => D;
 }
 
-export interface FileAPI extends PathAPI, DataAPI {
+export interface FileAPI<D extends RSU> extends PathAPI, DataAPI<D> {
 	readonly isDirectory: (path: string) => boolean;
 	readonly exists: (path: string) => boolean;
 	// reading directories and files
 	readonly readFile: (filePath: string) => Promise<string>;
 }
 
-export interface DirectoryAPI extends FileAPI {
+export interface DirectoryAPI<D extends RSU> extends FileAPI<D> {
 	readonly readDirectory: (
 		directoryPath: string,
 	) => Promise<readonly string[]>; // might throw
 }
 
-export interface Repomod {
+export interface Repomod<D extends RSU> {
 	readonly includePatterns?: readonly string[];
 	readonly excludePatterns?: readonly string[];
 	readonly handleDirectory?: (
-		api: DirectoryAPI,
+		api: DirectoryAPI<D>,
 		path: string,
 		options: Options,
 	) => Promise<readonly DirectoryCommand[]>;
 	readonly handleFile?: (
-		api: FileAPI,
+		api: FileAPI<D>,
 		path: string,
 		options: Options,
 	) => Promise<readonly FileCommand[]>;
 	readonly handleData?: (
-		api: DataAPI,
+		api: DataAPI<D>,
 		path: string,
 		data: string,
 		options: Options,
 	) => Promise<DataCommand>;
 }
 
-export interface API {
+export interface API<D extends RSU> {
 	facadeFileSystem: FacadeFileSystem;
-	directoryAPI: DirectoryAPI;
-	fileAPI: FileAPI;
-	dataAPI: DataAPI;
+	directoryAPI: DirectoryAPI<D>;
+	fileAPI: FileAPI<D>;
+	dataAPI: DataAPI<D>;
 }
 
-const defaultHandleDirectory: Repomod['handleDirectory'] = async (
+// eslint-disable-next-line @typescript-eslint/ban-types
+const defaultHandleDirectory: Repomod<{}>['handleDirectory'] = async (
 	api,
 	directoryPath,
 	options,
@@ -145,7 +148,8 @@ const defaultHandleDirectory: Repomod['handleDirectory'] = async (
 	return commands;
 };
 
-const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) =>
+// eslint-disable-next-line @typescript-eslint/ban-types
+const defaultHandleFile: Repomod<{}>['handleFile'] = async (_, path, options) =>
 	Promise.resolve([
 		{
 			kind: 'upsertFile',
@@ -154,14 +158,15 @@ const defaultHandleFile: Repomod['handleFile'] = async (_, path, options) =>
 		},
 	]);
 
-const defaultHandleData: Repomod['handleData'] = async () =>
+// eslint-disable-next-line @typescript-eslint/ban-types
+const defaultHandleData: Repomod<{}>['handleData'] = async () =>
 	Promise.resolve({
 		kind: 'noop',
 	});
 
-const handleCommand = async (
-	api: API,
-	repomod: Repomod,
+const handleCommand = async <D extends RSU>(
+	api: API<D>,
+	repomod: Repomod<D>,
 	command: Command,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
@@ -251,22 +256,22 @@ const handleCommand = async (
 	}
 };
 
-export const buildApi = (
+export const buildApi = <D extends RSU>(
 	facadeFileSystem: FacadeFileSystem,
-	getDependencies: DataAPI['getDependencies'],
-): API => {
+	getDependencies: DataAPI<D>['getDependencies'],
+): API<D> => {
 	const pathAPI: PathAPI = {
 		getDirname: (path) => platformPath.dirname(path),
 		getBasename: (path) => platformPath.basename(path),
 		joinPaths: (...paths) => platformPath.join(...paths),
 	};
 
-	const dataAPI: DataAPI = {
+	const dataAPI: DataAPI<D> = {
 		getDependencies,
 		...pathAPI,
 	};
 
-	const directoryAPI: DirectoryAPI = {
+	const directoryAPI: DirectoryAPI<D> = {
 		readDirectory: (path) => facadeFileSystem.readDirectory(path),
 		isDirectory: (path) => facadeFileSystem.isDirectory(path),
 		exists: (path) => facadeFileSystem.exists(path),
@@ -274,7 +279,7 @@ export const buildApi = (
 		...dataAPI,
 	};
 
-	const fileAPI: FileAPI = {
+	const fileAPI: FileAPI<D> = {
 		...directoryAPI,
 	};
 
@@ -286,9 +291,9 @@ export const buildApi = (
 	};
 };
 
-export const executeRepomod = async (
-	api: API,
-	repomod: Repomod,
+export const executeRepomod = async <D extends RSU>(
+	api: API<D>,
+	repomod: Repomod<D>,
 	path: string,
 	options: Options,
 ): Promise<readonly ExternalFileCommand[]> => {

@@ -13,6 +13,11 @@ import rehypeParse from 'rehype-parse';
 import { unified } from 'unified';
 import hastToBabelAst from '@svgr/hast-util-to-babel-ast';
 
+type Dependencies = {
+	rehypeParse: typeof rehypeParse,
+	hastToBabelAst: typeof hastToBabelAst,
+}
+
 const repomod: Repomod = {
 	includePatterns: ['**/*.index.html'],
 	excludePatterns: ['**/node_modules'],
