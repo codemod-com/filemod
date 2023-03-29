@@ -13,12 +13,13 @@ import rehypeParse from 'rehype-parse';
 import { unified } from 'unified';
 import hastToBabelAst from '@svgr/hast-util-to-babel-ast';
 
-type Dependencies = {
-	rehypeParse: typeof rehypeParse,
-	hastToBabelAst: typeof hastToBabelAst,
-}
+type Dependencies = Readonly<{
+	unified: typeof unified;
+	rehypeParse: typeof rehypeParse;
+	hastToBabelAst: typeof hastToBabelAst;
+}>;
 
-const repomod: Repomod = {
+const repomod: Repomod<Dependencies> = {
 	includePatterns: ['**/*.index.html'],
 	excludePatterns: ['**/node_modules'],
 	handleFile: async (api, path: string, options) => {
@@ -56,7 +57,7 @@ const repomod: Repomod = {
 		];
 	},
 	// this function might not be called at all
-	handleData: async (_, path, __, options) => {
+	handleData: async (api, path, __, options) => {
 		const index_html_data = options['index_html_data'] ?? '';
 
 		const root = j.withParser('tsx')(`
@@ -73,7 +74,12 @@ const repomod: Repomod = {
 			}
 		`);
 
-		const hast = unified().use(rehypeParse).parse(index_html_data);
+		const dependencies = api.getDependencies();
+
+		const hast = dependencies
+			.unified()
+			.use(dependencies.rehypeParse)
+			.parse(index_html_data);
 
 		hast.children = hast.children.filter(
 			(child) => child.type !== 'doctype',
@@ -81,7 +87,7 @@ const repomod: Repomod = {
 
 		const program: Program =
 			// @ts-expect-error default import issues
-			hastToBabelAst(hast);
+			dependencies.hastToBabelAst(hast);
 
 		const jsxRoot = j(program);
 
@@ -185,8 +191,10 @@ const fileSystemManager = new FileSystemManager(readdir, readFile, stat);
 // vol.promises.stat as any,
 
 const ffs = new FacadeFileSystem(fs, fileSystemManager);
-const api = buildApi(ffs, () => ({
-	// parseDocument: htmlparser2.parseDocument,
+const api = buildApi<Dependencies>(ffs, () => ({
+	unified,
+	rehypeParse,
+	hastToBabelAst,
 }));
 
 executeRepomod(
