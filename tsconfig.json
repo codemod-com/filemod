@@ -19,6 +19,8 @@
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
 		"noPropertyAccessFromIndexSignature": true,
-		"skipLibCheck": true
+		"skipLibCheck": true,
+		"module": "ES2020",
+		"moduleResolution": "nodenext"
 	}
 }
