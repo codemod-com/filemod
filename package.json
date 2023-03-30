@@ -2,7 +2,7 @@
 	"name": "repomod-engine-monorepo",
 	"version": "1.0.0",
 	"description": "",
-	"main": "index.js",
+	"type": "module",
 	"scripts": {
 		"build": "turbo build",
 		"lint:eslint:check": "eslint . --no-color",

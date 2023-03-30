@@ -2,12 +2,12 @@ import * as fs from 'node:fs';
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash.js';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
-import glob from 'glob';
+import * as glob from 'glob';
 import { promisify } from 'node:util';
 import { ExternalFileCommand } from './externalFileCommands.js';
 import { FileSystemManager } from './fileSystemManager.js';
 
-const promisifiedGlob = promisify(glob);
+const promisifiedGlob = promisify(glob.glob);
 
 interface UnifiedFile {
 	readonly kind: 'file';
