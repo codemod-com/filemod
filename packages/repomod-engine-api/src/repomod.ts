@@ -31,37 +31,6 @@ export interface Repomod<D extends RSU> {
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleDirectory: Repomod<{}>['handleDirectory'] = async (
-	api,
-	directoryPath,
-	options,
-) => {
-	const commands: DirectoryCommand[] = [];
-
-	const paths = await api.readDirectory(directoryPath);
-
-	for (const path of paths) {
-		const directory = api.isDirectory(path);
-
-		if (directory) {
-			commands.push({
-				kind: 'handleDirectory',
-				path,
-				options,
-			});
-		} else {
-			commands.push({
-				kind: 'handleFile',
-				path,
-				options,
-			});
-		}
-	}
-
-	return commands;
-};
-
-// eslint-disable-next-line @typescript-eslint/ban-types
 const defaultHandleFile: Repomod<{}>['handleFile'] = async (_, path, options) =>
 	Promise.resolve([
 		{
@@ -109,9 +78,12 @@ const handleCommand = async <D extends RSU>(
 			return;
 		}
 
-		const handleDirectory =
-			repomod.handleDirectory ?? defaultHandleDirectory;
+		const {handleDirectory} = repomod;
 
+		if(handleDirectory === void 0) {
+			return;
+		}
+	
 		const commands = await handleDirectory(
 			api.directoryAPI,
 			command.path,
