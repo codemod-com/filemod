@@ -109,8 +109,12 @@ const handleCommand = async <D extends RSU>(
 			return;
 		}
 
-		const handleDirectory =
-			repomod.handleDirectory ?? defaultHandleDirectory;
+		const defaultDirectoryHandler = !repomod.includePatterns ? defaultHandleDirectory : null;
+		const handleDirectory = repomod.handleDirectory ?? defaultDirectoryHandler; 
+		
+		if(handleDirectory === null) {
+			return;
+		}
 
 		const commands = await handleDirectory(
 			api.directoryAPI,
