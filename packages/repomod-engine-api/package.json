@@ -12,11 +12,18 @@
 		"tsconfig.json"
 	],
 	"scripts": {
-		"build": "tsc"
+		"build": "tsc",
+		"test": "mocha"
 	},
 	"keywords": [],
 	"author": "Caartaa, Inc.",
 	"dependencies": {
 		"glob": "10.2.7"
+	},
+	"devDependencies": {
+		"@types/mocha": "10.0.1",
+		"memfs": "^3.5.1",
+		"mocha": "10.2.0",
+		"ts-node": "10.9.1"
 	}
 }
