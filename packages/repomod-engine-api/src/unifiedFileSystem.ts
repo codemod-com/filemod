@@ -2,12 +2,9 @@ import * as fs from 'node:fs';
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash.js';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
-import glob from 'glob';
-import { promisify } from 'node:util';
+import { glob } from 'glob';
 import { ExternalFileCommand } from './externalFileCommands.js';
 import { FileSystemManager } from './fileSystemManager.js';
-
-const promisifiedGlob = promisify(glob);
 
 interface UnifiedFile {
 	readonly kind: 'file';
@@ -212,12 +209,18 @@ export class UnifiedFileSystem {
 		includePatterns: readonly string[],
 		excludePatterns: readonly string[],
 	): Promise<readonly string[]> {
-		const paths = await promisifiedGlob(includePatterns[0] ?? '', {
-			absolute: true,
-			cwd: directoryPath,
-			fs: this.__realFileSystem,
-			ignore: excludePatterns,
-		});
+		const twoDimentionalPaths = await Promise.all(
+			includePatterns.map((includePattern) =>
+				glob(includePattern, {
+					absolute: true,
+					cwd: directoryPath,
+					fs: this.__realFileSystem,
+					ignore: excludePatterns.slice(),
+				}),
+			),
+		);
+
+		const paths = new Set(twoDimentionalPaths.flat());
 
 		paths.forEach((path) => {
 			const unifiedFile: UnifiedFile = {
@@ -230,7 +233,7 @@ export class UnifiedFileSystem {
 			this.__entries.set(pathHashDigest, unifiedFile);
 		});
 
-		return paths;
+		return Array.from(paths);
 	}
 
 	public deleteFile(filePath: string): void {

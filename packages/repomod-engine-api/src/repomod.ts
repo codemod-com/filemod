@@ -83,7 +83,7 @@ const handleCommand = async <D extends RSU>(
 	command: Command,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
-		if (repomod.includePatterns) {
+		if (repomod.includePatterns && repomod.includePatterns.length > 0) {
 			const paths = await api.unifiedFileSystem.getFilePaths(
 				command.path,
 				repomod.includePatterns,
