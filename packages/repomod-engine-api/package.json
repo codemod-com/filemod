@@ -7,6 +7,8 @@
 	"types": "./dist/index.d.ts",
 	"files": [
 		"./dist",
+		"!**/*.test.js",
+		"!**/*.test.d.ts",
 		"LICENSE",
 		"README.md",
 		"tsconfig.json"
