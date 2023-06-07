@@ -1,12 +1,11 @@
 {
 	"extends": "../../tsconfig.json",
-	"include": ["./src", "./test"],
+	"include": ["./src"],
 	"exclude": ["./dist", "./build", "./node_modules"],
 	"compilerOptions": {
 		"module": "NodeNext",
 		"moduleResolution": "nodenext",
-
-		"types": ["node"],
+		"types": ["node", "mocha"],
 		"target": "es2015",
 		"declaration": true,
 		"outDir": "./dist"

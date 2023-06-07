@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import { FSOption } from 'path-scurry';
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash.js';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
@@ -33,7 +33,7 @@ export class UnifiedFileSystem {
 	private __changes = new Map<PathHashDigest, string | null>();
 
 	public constructor(
-		private __realFileSystem: typeof fs,
+		private __realFileSystem: FSOption,
 		private __fileSystemManager: FileSystemManager,
 	) {}
 
