@@ -4,22 +4,13 @@
 		"//#lint:eslint:check": {},
 		"//#lint:prettier:check": {},
 		"lint": {
-			"dependsOn": [
-				"//#lint:eslint:check",
-				"//#lint:prettier:check"
-			]
+			"dependsOn": ["//#lint:eslint:check", "//#lint:prettier:check"]
 		},
 		"build": {
-			"dependsOn": [
-				"lint",
-				"^build"
-			]
+			"dependsOn": ["lint", "^build"]
 		},
 		"test": {
-			"dependsOn": [
-				"build",
-				"^test"
-			],
+			"dependsOn": ["build", "^test"],
 			"outputs": []
 		}
 	}
