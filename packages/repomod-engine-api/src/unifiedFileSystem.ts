@@ -1,4 +1,4 @@
-import * as fs from 'node:fs';
+import { FSOption } from 'path-scurry';
 import * as platformPath from 'node:path';
 import { buildHashDigest } from './buildHash.js';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
@@ -33,7 +33,7 @@ export class UnifiedFileSystem {
 	private __changes = new Map<PathHashDigest, string | null>();
 
 	public constructor(
-		private __realFileSystem: typeof fs,
+		private __realFileSystem: FSOption,
 		private __fileSystemManager: FileSystemManager,
 	) {}
 
@@ -209,18 +209,12 @@ export class UnifiedFileSystem {
 		includePatterns: readonly string[],
 		excludePatterns: readonly string[],
 	): Promise<readonly string[]> {
-		const twoDimentionalPaths = await Promise.all(
-			includePatterns.map((includePattern) =>
-				glob(includePattern, {
-					absolute: true,
-					cwd: directoryPath,
-					fs: this.__realFileSystem,
-					ignore: excludePatterns.slice(),
-				}),
-			),
-		);
-
-		const paths = new Set(twoDimentionalPaths.flat());
+		const paths = await glob(includePatterns.slice(), {
+			absolute: true,
+			cwd: directoryPath,
+			fs: this.__realFileSystem,
+			ignore: excludePatterns.slice(),
+		});
 
 		paths.forEach((path) => {
 			const unifiedFile: UnifiedFile = {
@@ -233,7 +227,7 @@ export class UnifiedFileSystem {
 			this.__entries.set(pathHashDigest, unifiedFile);
 		});
 
-		return Array.from(paths);
+		return paths;
 	}
 
 	public deleteFile(filePath: string): void {

@@ -1,22 +1,32 @@
 {
 	"name": "@intuita-inc/repomod-engine-api",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"description": "",
 	"type": "module",
 	"exports": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"files": [
 		"./dist",
+		"!**/*.test.js",
+		"!**/*.test.d.ts",
 		"LICENSE",
 		"README.md",
 		"tsconfig.json"
 	],
 	"scripts": {
-		"build": "tsc"
+		"build": "tsc",
+		"test": "mocha"
 	},
 	"keywords": [],
 	"author": "Caartaa, Inc.",
 	"dependencies": {
 		"glob": "10.2.7"
+	},
+	"devDependencies": {
+		"@types/mocha": "10.0.1",
+		"memfs": "^3.5.1",
+		"mocha": "10.2.0",
+		"ts-node": "10.9.1",
+		"path-scurry": "1.9.2"
 	}
 }
