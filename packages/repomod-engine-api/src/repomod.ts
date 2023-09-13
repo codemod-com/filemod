@@ -9,6 +9,16 @@ import {
 } from './internalCommands.js';
 import { Options, RSU } from './options.js';
 
+type DistributedOmit<T, K extends keyof any> = T extends any
+	? Pick<T, Exclude<keyof T, K>>
+	: never;
+
+export type CallbackService = Readonly<{
+	onCommandExecuted: (
+		command: DistributedOmit<Command, 'data' | 'options'>,
+	) => void;
+}>;
+
 export interface Repomod<D extends RSU> {
 	readonly includePatterns?: readonly string[];
 	readonly excludePatterns?: readonly string[];
@@ -81,6 +91,7 @@ const handleCommand = async <D extends RSU>(
 	api: API<D>,
 	repomod: Repomod<D>,
 	command: Command,
+	callbackService: CallbackService,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
 		if (repomod.includePatterns && repomod.includePatterns.length > 0) {
@@ -97,8 +108,18 @@ const handleCommand = async <D extends RSU>(
 					options: command.options,
 				};
 
-				await handleCommand(api, repomod, handleFileCommand);
+				await handleCommand(
+					api,
+					repomod,
+					handleFileCommand,
+					callbackService,
+				);
 			}
+
+			callbackService.onCommandExecuted({
+				kind: command.kind,
+				path: command.path,
+			});
 		}
 
 		const unifiedEntry = await api.unifiedFileSystem.upsertUnifiedDirectory(
@@ -112,6 +133,7 @@ const handleCommand = async <D extends RSU>(
 		const defaultDirectoryHandler = !repomod.includePatterns
 			? defaultHandleDirectory
 			: null;
+
 		const handleDirectory =
 			repomod.handleDirectory ?? defaultDirectoryHandler;
 
@@ -126,8 +148,13 @@ const handleCommand = async <D extends RSU>(
 		);
 
 		for (const command of commands) {
-			await handleCommand(api, repomod, command);
+			await handleCommand(api, repomod, command, callbackService);
 		}
+
+		callbackService.onCommandExecuted({
+			kind: command.kind,
+			path: command.path,
+		});
 	}
 
 	if (command.kind === 'handleFile') {
@@ -148,8 +175,13 @@ const handleCommand = async <D extends RSU>(
 		);
 
 		for (const command of commands) {
-			await handleCommand(api, repomod, command);
+			await handleCommand(api, repomod, command, callbackService);
 		}
+
+		callbackService.onCommandExecuted({
+			kind: command.kind,
+			path: command.path,
+		});
 	}
 
 	if (command.kind === 'upsertFile') {
@@ -164,15 +196,30 @@ const handleCommand = async <D extends RSU>(
 			command.options,
 		);
 
-		await handleCommand(api, repomod, dataCommand);
+		await handleCommand(api, repomod, dataCommand, callbackService);
+
+		callbackService.onCommandExecuted({
+			kind: command.kind,
+			path: command.path,
+		});
 	}
 
 	if (command.kind === 'deleteFile') {
 		api.unifiedFileSystem.deleteFile(command.path);
+
+		callbackService.onCommandExecuted({
+			kind: command.kind,
+			path: command.path,
+		});
 	}
 
 	if (command.kind === 'upsertData') {
 		api.unifiedFileSystem.upsertData(command.path, command.data);
+
+		callbackService.onCommandExecuted({
+			kind: command.kind,
+			path: command.path,
+		});
 	}
 };
 
@@ -181,6 +228,7 @@ export const executeRepomod = async <D extends RSU>(
 	repomod: Repomod<D>,
 	path: string,
 	options: Options,
+	callbackService: CallbackService,
 ): Promise<readonly ExternalFileCommand[]> => {
 	const unifiedEntry = await api.unifiedFileSystem.upsertUnifiedEntry(path);
 
@@ -197,7 +245,7 @@ export const executeRepomod = async <D extends RSU>(
 		options,
 	};
 
-	await handleCommand(api, repomod, command);
+	await handleCommand(api, repomod, command, callbackService);
 
 	return api.unifiedFileSystem.buildExternalFileCommands();
 };
