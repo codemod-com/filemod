@@ -1,6 +1,6 @@
 import { buildApi } from './api.js';
 import { FileSystemManager } from './fileSystemManager.js';
-import { Repomod, executeRepomod } from './repomod.js';
+import { Repomod, executeRepomod, CallbackService } from './repomod.js';
 import { UnifiedFileSystem } from './unifiedFileSystem.js';
 
 export {
@@ -8,5 +8,6 @@ export {
 	FileSystemManager,
 	Repomod,
 	executeRepomod,
+	CallbackService,
 	UnifiedFileSystem,
 };
