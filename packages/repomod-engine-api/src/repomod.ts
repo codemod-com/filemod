@@ -5,7 +5,6 @@ import {
 	DataCommand,
 	DirectoryCommand,
 	FileCommand,
-	HandleFileCommand,
 } from './internalCommands.js';
 import { Options, RSU } from './options.js';
 
@@ -14,9 +13,10 @@ type DistributedOmit<T, K extends keyof any> = T extends any
 	: never;
 
 export type CallbackService = Readonly<{
-	onCommandExecuted: (
+	onCommandExecuted?: (
 		command: DistributedOmit<Command, 'data' | 'options'>,
 	) => void;
+	onError?: (path: string, message: string) => void;
 }>;
 
 export interface Repomod<D extends RSU> {
@@ -102,21 +102,19 @@ const handleCommand = async <D extends RSU>(
 			);
 
 			for (const path of paths) {
-				const handleFileCommand: HandleFileCommand = {
-					kind: 'handleFile',
-					path,
-					options: command.options,
-				};
-
 				await handleCommand(
 					api,
 					repomod,
-					handleFileCommand,
+					{
+						kind: 'handleFile',
+						path,
+						options: command.options,
+					},
 					callbackService,
 				);
 			}
 
-			callbackService.onCommandExecuted({
+			callbackService.onCommandExecuted?.({
 				kind: command.kind,
 				path: command.path,
 			});
@@ -151,7 +149,7 @@ const handleCommand = async <D extends RSU>(
 			await handleCommand(api, repomod, command, callbackService);
 		}
 
-		callbackService.onCommandExecuted({
+		callbackService.onCommandExecuted?.({
 			kind: command.kind,
 			path: command.path,
 		});
@@ -168,17 +166,24 @@ const handleCommand = async <D extends RSU>(
 
 		const handleFile = repomod.handleFile ?? defaultHandleFile;
 
-		const commands = await handleFile(
-			api.fileAPI,
-			command.path,
-			command.options,
-		);
+		try {
+			const commands = await handleFile(
+				api.fileAPI,
+				command.path,
+				command.options,
+			);
 
-		for (const command of commands) {
-			await handleCommand(api, repomod, command, callbackService);
+			for (const command of commands) {
+				await handleCommand(api, repomod, command, callbackService);
+			}
+		} catch (error) {
+			callbackService.onError?.(
+				command.path,
+				error instanceof Error ? error.message : String(error),
+			);
 		}
 
-		callbackService.onCommandExecuted({
+		callbackService.onCommandExecuted?.({
 			kind: command.kind,
 			path: command.path,
 		});
@@ -189,16 +194,23 @@ const handleCommand = async <D extends RSU>(
 
 		const handleData = repomod.handleData ?? defaultHandleData;
 
-		const dataCommand = await handleData(
-			api.dataAPI,
-			command.path,
-			data,
-			command.options,
-		);
+		try {
+			const dataCommand = await handleData(
+				api.dataAPI,
+				command.path,
+				data,
+				command.options,
+			);
 
-		await handleCommand(api, repomod, dataCommand, callbackService);
+			await handleCommand(api, repomod, dataCommand, callbackService);
+		} catch (error) {
+			callbackService.onError?.(
+				command.path,
+				error instanceof Error ? error.message : String(error),
+			);
+		}
 
-		callbackService.onCommandExecuted({
+		callbackService.onCommandExecuted?.({
 			kind: command.kind,
 			path: command.path,
 		});
@@ -207,7 +219,7 @@ const handleCommand = async <D extends RSU>(
 	if (command.kind === 'deleteFile') {
 		api.unifiedFileSystem.deleteFile(command.path);
 
-		callbackService.onCommandExecuted({
+		callbackService.onCommandExecuted?.({
 			kind: command.kind,
 			path: command.path,
 		});
@@ -216,7 +228,7 @@ const handleCommand = async <D extends RSU>(
 	if (command.kind === 'upsertData') {
 		api.unifiedFileSystem.upsertData(command.path, command.data);
 
-		callbackService.onCommandExecuted({
+		callbackService.onCommandExecuted?.({
 			kind: command.kind,
 			path: command.path,
 		});
