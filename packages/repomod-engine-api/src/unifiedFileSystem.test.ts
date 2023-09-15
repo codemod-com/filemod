@@ -8,7 +8,7 @@ import { UnifiedFileSystem } from './unifiedFileSystem.js';
 import { deepStrictEqual } from 'node:assert';
 
 describe('unifiedFileSystem', function () {
-	it('should x', async function () {
+	it('should get proper file paths', async function () {
 		const volume = Volume.fromJSON({
 			'/opt/project/a.json': '',
 			'/opt/project/package.json': '',

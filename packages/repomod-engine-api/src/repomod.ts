@@ -5,8 +5,9 @@ import {
 	DataCommand,
 	DirectoryCommand,
 	FileCommand,
+	FinishCommand,
 } from './internalCommands.js';
-import { Options, RSU } from './options.js';
+import { Options, RSU, State } from './options.js';
 
 type DistributedOmit<T, K extends keyof any> = T extends any
 	? Pick<T, Exclude<keyof T, K>>
@@ -19,29 +20,46 @@ export type CallbackService = Readonly<{
 	onError?: (path: string, message: string) => void;
 }>;
 
-export interface Repomod<D extends RSU> {
+export type HandleDirectory<D extends RSU, S extends State> = (
+	api: DirectoryAPI<D>,
+	path: string,
+	options: Options,
+	state: S | null,
+) => Promise<readonly DirectoryCommand[]>;
+
+export type HandleFile<D extends RSU, S> = (
+	api: FileAPI<D>,
+	path: string,
+	options: Options,
+	state: S | null,
+) => Promise<readonly FileCommand[]>;
+
+export type HandleData<D extends RSU, S extends State> = (
+	api: DataAPI<D>,
+	path: string,
+	data: string,
+	options: Options,
+	state: S | null,
+) => Promise<DataCommand>;
+
+export type InitializeState<S extends State> = (options: Options) => Promise<S>;
+
+export type HandleFinish<S extends State> = (
+	state: S | null,
+) => Promise<FinishCommand>;
+
+export interface Repomod<D extends RSU, S extends State> {
 	readonly includePatterns?: readonly string[];
 	readonly excludePatterns?: readonly string[];
-	readonly handleDirectory?: (
-		api: DirectoryAPI<D>,
-		path: string,
-		options: Options,
-	) => Promise<readonly DirectoryCommand[]>;
-	readonly handleFile?: (
-		api: FileAPI<D>,
-		path: string,
-		options: Options,
-	) => Promise<readonly FileCommand[]>;
-	readonly handleData?: (
-		api: DataAPI<D>,
-		path: string,
-		data: string,
-		options: Options,
-	) => Promise<DataCommand>;
+	readonly handleDirectory?: HandleDirectory<D, S>;
+	readonly handleFile?: HandleFile<D, S>;
+	readonly handleData?: HandleData<D, S>;
+	readonly initializeState?: InitializeState<S>;
+	readonly handleFinish?: HandleFinish<S>;
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleDirectory: Repomod<{}>['handleDirectory'] = async (
+const defaultHandleDirectory: HandleDirectory<any, any> = async (
 	api,
 	directoryPath,
 	options,
@@ -72,7 +90,11 @@ const defaultHandleDirectory: Repomod<{}>['handleDirectory'] = async (
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleFile: Repomod<{}>['handleFile'] = async (_, path, options) =>
+const defaultHandleFile: Repomod<{}, any>['handleFile'] = async (
+	_,
+	path,
+	options,
+) =>
 	Promise.resolve([
 		{
 			kind: 'upsertFile',
@@ -82,16 +104,17 @@ const defaultHandleFile: Repomod<{}>['handleFile'] = async (_, path, options) =>
 	]);
 
 // eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleData: Repomod<{}>['handleData'] = async () =>
+const defaultHandleData: Repomod<{}, any>['handleData'] = async () =>
 	Promise.resolve({
 		kind: 'noop',
 	});
 
-const handleCommand = async <D extends RSU>(
+const handleCommand = async <D extends RSU, S extends State>(
 	api: API<D>,
-	repomod: Repomod<D>,
+	repomod: Repomod<D, S>,
 	command: Command,
 	callbackService: CallbackService,
+	state: S | null,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
 		if (repomod.includePatterns && repomod.includePatterns.length > 0) {
@@ -111,6 +134,7 @@ const handleCommand = async <D extends RSU>(
 						options: command.options,
 					},
 					callbackService,
+					state,
 				);
 			}
 
@@ -143,10 +167,11 @@ const handleCommand = async <D extends RSU>(
 			api.directoryAPI,
 			command.path,
 			command.options,
+			state,
 		);
 
 		for (const command of commands) {
-			await handleCommand(api, repomod, command, callbackService);
+			await handleCommand(api, repomod, command, callbackService, state);
 		}
 
 		callbackService.onCommandExecuted?.({
@@ -171,10 +196,17 @@ const handleCommand = async <D extends RSU>(
 				api.fileAPI,
 				command.path,
 				command.options,
+				state,
 			);
 
 			for (const command of commands) {
-				await handleCommand(api, repomod, command, callbackService);
+				await handleCommand(
+					api,
+					repomod,
+					command,
+					callbackService,
+					state,
+				);
 			}
 		} catch (error) {
 			callbackService.onError?.(
@@ -200,9 +232,16 @@ const handleCommand = async <D extends RSU>(
 				command.path,
 				data,
 				command.options,
+				state,
 			);
 
-			await handleCommand(api, repomod, dataCommand, callbackService);
+			await handleCommand(
+				api,
+				repomod,
+				dataCommand,
+				callbackService,
+				state,
+			);
 		} catch (error) {
 			callbackService.onError?.(
 				command.path,
@@ -235,9 +274,9 @@ const handleCommand = async <D extends RSU>(
 	}
 };
 
-export const executeRepomod = async <D extends RSU>(
+export const executeRepomod = async <D extends RSU, S extends State>(
 	api: API<D>,
-	repomod: Repomod<D>,
+	repomod: Repomod<D, S>,
 	path: string,
 	options: Options,
 	callbackService: CallbackService,
@@ -257,7 +296,17 @@ export const executeRepomod = async <D extends RSU>(
 		options,
 	};
 
-	await handleCommand(api, repomod, command, callbackService);
+	const state = (await repomod.initializeState?.(options)) ?? null;
 
-	return api.unifiedFileSystem.buildExternalFileCommands();
+	await handleCommand<D, S>(api, repomod, command, callbackService, state);
+
+	const finishCommand = (await repomod.handleFinish?.(state)) ?? {
+		kind: 'noop',
+	};
+
+	if (finishCommand.kind === 'noop') {
+		return api.unifiedFileSystem.buildExternalFileCommands();
+	}
+
+	return executeRepomod<D, S>(api, repomod, path, options, callbackService);
 };

@@ -57,4 +57,14 @@ export interface NoopCommand {
 
 export type DataCommand = UpsertDataCommand | NoopCommand;
 
-export type Command = DirectoryCommand | FileCommand | DataCommand;
+export interface RestartCommand {
+	readonly kind: 'restart';
+}
+
+export type FinishCommand = RestartCommand | NoopCommand;
+
+export type Command =
+	| DirectoryCommand
+	| FileCommand
+	| DataCommand
+	| FinishCommand;

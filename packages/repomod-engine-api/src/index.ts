@@ -1,6 +1,14 @@
 import { buildApi } from './api.js';
 import { FileSystemManager } from './fileSystemManager.js';
-import { Repomod, executeRepomod, CallbackService } from './repomod.js';
+import {
+	Repomod,
+	executeRepomod,
+	CallbackService,
+	HandleData,
+	HandleDirectory,
+	HandleFile,
+	HandleFinish,
+} from './repomod.js';
 import { UnifiedFileSystem } from './unifiedFileSystem.js';
 
 export {
@@ -10,4 +18,8 @@ export {
 	executeRepomod,
 	CallbackService,
 	UnifiedFileSystem,
+	HandleData,
+	HandleDirectory,
+	HandleFile,
+	HandleFinish,
 };
