@@ -42,9 +42,13 @@ export type HandleData<D extends RSU, S extends State> = (
 	state: S | null,
 ) => Promise<DataCommand>;
 
-export type InitializeState<S extends State> = (options: Options) => Promise<S>;
+export type InitializeState<S extends State> = (
+	options: Options,
+	previousState: S | null,
+) => Promise<S>;
 
 export type HandleFinish<S extends State> = (
+	options: Options,
 	state: S | null,
 ) => Promise<FinishCommand>;
 
@@ -280,6 +284,7 @@ export const executeRepomod = async <D extends RSU, S extends State>(
 	path: string,
 	options: Options,
 	callbackService: CallbackService,
+	state?: S | null,
 ): Promise<readonly ExternalFileCommand[]> => {
 	const unifiedEntry = await api.unifiedFileSystem.upsertUnifiedEntry(path);
 
@@ -296,11 +301,23 @@ export const executeRepomod = async <D extends RSU, S extends State>(
 		options,
 	};
 
-	const state = (await repomod.initializeState?.(options)) ?? null;
+	const previousState = state ?? null;
 
-	await handleCommand<D, S>(api, repomod, command, callbackService, state);
+	const nextState =
+		(await repomod.initializeState?.(options, previousState)) ?? null;
 
-	const finishCommand = (await repomod.handleFinish?.(state)) ?? {
+	await handleCommand<D, S>(
+		api,
+		repomod,
+		command,
+		callbackService,
+		nextState,
+	);
+
+	const finishCommand = (await repomod.handleFinish?.(
+		options,
+		nextState,
+	)) ?? {
 		kind: 'noop',
 	};
 
@@ -308,5 +325,12 @@ export const executeRepomod = async <D extends RSU, S extends State>(
 		return api.unifiedFileSystem.buildExternalFileCommands();
 	}
 
-	return executeRepomod<D, S>(api, repomod, path, options, callbackService);
+	return executeRepomod<D, S>(
+		api,
+		repomod,
+		path,
+		options,
+		callbackService,
+		nextState,
+	);
 };
