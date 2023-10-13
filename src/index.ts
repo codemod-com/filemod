@@ -8,6 +8,7 @@ import {
 	HandleDirectory,
 	HandleFile,
 	HandleFinish,
+	InitializeState,
 } from './repomod.js';
 import { UnifiedFileSystem } from './unifiedFileSystem.js';
 
@@ -22,4 +23,5 @@ export {
 	HandleDirectory,
 	HandleFile,
 	HandleFinish,
+	InitializeState,
 };

@@ -1,6 +1,13 @@
 {
+	"include": ["./src"],
+	"exclude": ["./dist", "./build", "./node_modules"],
 	"compilerOptions": {
-		"target": "es2016",
+		"module": "NodeNext",
+		"moduleResolution": "nodenext",
+		"types": ["node", "mocha"],
+		"target": "es2015",
+		"declaration": true,
+		"outDir": "./dist",
 		"esModuleInterop": true,
 		"forceConsistentCasingInFileNames": true,
 		"strict": true,
@@ -19,8 +26,6 @@
 		"noUncheckedIndexedAccess": true,
 		"noImplicitOverride": true,
 		"noPropertyAccessFromIndexSignature": true,
-		"skipLibCheck": true,
-		"module": "ES2020",
-		"moduleResolution": "nodenext"
-	}
+		"skipLibCheck": true
+	},
 }

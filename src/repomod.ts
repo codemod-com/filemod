@@ -9,7 +9,7 @@ import {
 } from './internalCommands.js';
 import { Options, RSU, State } from './options.js';
 
-type DistributedOmit<T, K extends keyof any> = T extends any
+type DistributedOmit<T, K> = T extends NonNullable<unknown>
 	? Pick<T, Exclude<keyof T, K>>
 	: never;
 
@@ -62,8 +62,7 @@ export interface Repomod<D extends RSU, S extends State> {
 	readonly handleFinish?: HandleFinish<S>;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleDirectory: HandleDirectory<any, any> = async (
+const defaultHandleDirectory: HandleDirectory<RSU, State> = async (
 	api,
 	directoryPath,
 	options,
@@ -93,8 +92,7 @@ const defaultHandleDirectory: HandleDirectory<any, any> = async (
 	return commands;
 };
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleFile: Repomod<{}, any>['handleFile'] = async (
+const defaultHandleFile: Repomod<RSU, State>['handleFile'] = async (
 	_,
 	path,
 	options,
@@ -107,8 +105,7 @@ const defaultHandleFile: Repomod<{}, any>['handleFile'] = async (
 		},
 	]);
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleData: Repomod<{}, any>['handleData'] = async () =>
+const defaultHandleData: Repomod<RSU, State>['handleData'] = async () =>
 	Promise.resolve({
 		kind: 'noop',
 	});

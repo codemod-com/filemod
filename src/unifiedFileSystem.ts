@@ -55,9 +55,8 @@ export class UnifiedFileSystem {
 		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
 
 		if (!this.__entries.has(directoryPathHashDigest)) {
-			const stats = await this.__fileSystemManager.promisifiedStat(
-				directoryPath,
-			);
+			const stats =
+				await this.__fileSystemManager.promisifiedStat(directoryPath);
 
 			if (!stats.isDirectory()) {
 				return null;
@@ -82,9 +81,8 @@ export class UnifiedFileSystem {
 		const filePathHashDigest = buildPathHashDigest(filePath);
 
 		if (!this.__entries.has(filePathHashDigest)) {
-			const stats = await this.__fileSystemManager.promisifiedStat(
-				filePath,
-			);
+			const stats =
+				await this.__fileSystemManager.promisifiedStat(filePath);
 
 			if (!stats.isFile()) {
 				return null;
