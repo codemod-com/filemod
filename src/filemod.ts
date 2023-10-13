@@ -9,7 +9,7 @@ import {
 } from './internalCommands.js';
 import { Options, RSU, State } from './options.js';
 
-type DistributedOmit<T, K extends keyof any> = T extends any
+type DistributedOmit<T, K> = T extends NonNullable<unknown>
 	? Pick<T, Exclude<keyof T, K>>
 	: never;
 
@@ -52,7 +52,7 @@ export type HandleFinish<S extends State> = (
 	state: S | null,
 ) => Promise<FinishCommand>;
 
-export interface Repomod<D extends RSU, S extends State> {
+export interface Filemod<D extends RSU, S extends State> {
 	readonly includePatterns?: readonly string[];
 	readonly excludePatterns?: readonly string[];
 	readonly handleDirectory?: HandleDirectory<D, S>;
@@ -62,8 +62,7 @@ export interface Repomod<D extends RSU, S extends State> {
 	readonly handleFinish?: HandleFinish<S>;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleDirectory: HandleDirectory<any, any> = async (
+const defaultHandleDirectory: HandleDirectory<RSU, State> = async (
 	api,
 	directoryPath,
 	options,
@@ -93,8 +92,7 @@ const defaultHandleDirectory: HandleDirectory<any, any> = async (
 	return commands;
 };
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleFile: Repomod<{}, any>['handleFile'] = async (
+const defaultHandleFile: Filemod<RSU, State>['handleFile'] = async (
 	_,
 	path,
 	options,
@@ -107,31 +105,30 @@ const defaultHandleFile: Repomod<{}, any>['handleFile'] = async (
 		},
 	]);
 
-// eslint-disable-next-line @typescript-eslint/ban-types
-const defaultHandleData: Repomod<{}, any>['handleData'] = async () =>
+const defaultHandleData: Filemod<RSU, State>['handleData'] = async () =>
 	Promise.resolve({
 		kind: 'noop',
 	});
 
 const handleCommand = async <D extends RSU, S extends State>(
 	api: API<D>,
-	repomod: Repomod<D, S>,
+	filemod: Filemod<D, S>,
 	command: Command,
 	callbackService: CallbackService,
 	state: S | null,
 ): Promise<void> => {
 	if (command.kind === 'handleDirectory') {
-		if (repomod.includePatterns && repomod.includePatterns.length > 0) {
+		if (filemod.includePatterns && filemod.includePatterns.length > 0) {
 			const paths = await api.unifiedFileSystem.getFilePaths(
 				command.path,
-				repomod.includePatterns,
-				repomod.excludePatterns ?? [],
+				filemod.includePatterns,
+				filemod.excludePatterns ?? [],
 			);
 
 			for (const path of paths) {
 				await handleCommand(
 					api,
-					repomod,
+					filemod,
 					{
 						kind: 'handleFile',
 						path,
@@ -156,12 +153,12 @@ const handleCommand = async <D extends RSU, S extends State>(
 			return;
 		}
 
-		const defaultDirectoryHandler = !repomod.includePatterns
+		const defaultDirectoryHandler = !filemod.includePatterns
 			? defaultHandleDirectory
 			: null;
 
 		const handleDirectory =
-			repomod.handleDirectory ?? defaultDirectoryHandler;
+			filemod.handleDirectory ?? defaultDirectoryHandler;
 
 		if (handleDirectory === null) {
 			return;
@@ -175,7 +172,7 @@ const handleCommand = async <D extends RSU, S extends State>(
 		);
 
 		for (const command of commands) {
-			await handleCommand(api, repomod, command, callbackService, state);
+			await handleCommand(api, filemod, command, callbackService, state);
 		}
 
 		callbackService.onCommandExecuted?.({
@@ -193,7 +190,7 @@ const handleCommand = async <D extends RSU, S extends State>(
 			return;
 		}
 
-		const handleFile = repomod.handleFile ?? defaultHandleFile;
+		const handleFile = filemod.handleFile ?? defaultHandleFile;
 
 		try {
 			const commands = await handleFile(
@@ -206,7 +203,7 @@ const handleCommand = async <D extends RSU, S extends State>(
 			for (const command of commands) {
 				await handleCommand(
 					api,
-					repomod,
+					filemod,
 					command,
 					callbackService,
 					state,
@@ -228,7 +225,7 @@ const handleCommand = async <D extends RSU, S extends State>(
 	if (command.kind === 'upsertFile') {
 		const data = await api.unifiedFileSystem.readFile(command.path);
 
-		const handleData = repomod.handleData ?? defaultHandleData;
+		const handleData = filemod.handleData ?? defaultHandleData;
 
 		try {
 			const dataCommand = await handleData(
@@ -241,7 +238,7 @@ const handleCommand = async <D extends RSU, S extends State>(
 
 			await handleCommand(
 				api,
-				repomod,
+				filemod,
 				dataCommand,
 				callbackService,
 				state,
@@ -278,9 +275,9 @@ const handleCommand = async <D extends RSU, S extends State>(
 	}
 };
 
-export const executeRepomod = async <D extends RSU, S extends State>(
+export const executeFilemod = async <D extends RSU, S extends State>(
 	api: API<D>,
-	repomod: Repomod<D, S>,
+	filemod: Filemod<D, S>,
 	path: string,
 	options: Options,
 	callbackService: CallbackService,
@@ -304,17 +301,17 @@ export const executeRepomod = async <D extends RSU, S extends State>(
 	const previousState = state ?? null;
 
 	const nextState =
-		(await repomod.initializeState?.(options, previousState)) ?? null;
+		(await filemod.initializeState?.(options, previousState)) ?? null;
 
 	await handleCommand<D, S>(
 		api,
-		repomod,
+		filemod,
 		command,
 		callbackService,
 		nextState,
 	);
 
-	const finishCommand = (await repomod.handleFinish?.(
+	const finishCommand = (await filemod.handleFinish?.(
 		options,
 		nextState,
 	)) ?? {
@@ -325,9 +322,9 @@ export const executeRepomod = async <D extends RSU, S extends State>(
 		return api.unifiedFileSystem.buildExternalFileCommands();
 	}
 
-	return executeRepomod<D, S>(
+	return executeFilemod<D, S>(
 		api,
-		repomod,
+		filemod,
 		path,
 		options,
 		callbackService,

@@ -1,25 +1,27 @@
 import { buildApi } from './api.js';
 import { FileSystemManager } from './fileSystemManager.js';
 import {
-	Repomod,
-	executeRepomod,
+	Filemod,
+	executeFilemod,
 	CallbackService,
 	HandleData,
 	HandleDirectory,
 	HandleFile,
 	HandleFinish,
-} from './repomod.js';
+	InitializeState,
+} from './filemod.js';
 import { UnifiedFileSystem } from './unifiedFileSystem.js';
 
 export {
 	buildApi,
 	FileSystemManager,
-	Repomod,
-	executeRepomod,
+	Filemod,
+	executeFilemod,
 	CallbackService,
 	UnifiedFileSystem,
 	HandleData,
 	HandleDirectory,
 	HandleFile,
 	HandleFinish,
+	InitializeState,
 };
