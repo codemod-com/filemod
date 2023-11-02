@@ -6,6 +6,7 @@ export interface PathAPI {
 	readonly getDirname: (path: string) => string;
 	readonly getBasename: (path: string) => string;
 	readonly joinPaths: (...paths: string[]) => string;
+	readonly currentWorkingDirectory: string;
 }
 
 export interface DataAPI<D extends RSU> extends PathAPI {
@@ -34,11 +35,13 @@ export interface API<D extends RSU> {
 export const buildApi = <D extends RSU>(
 	unifiedFileSystem: UnifiedFileSystem,
 	getDependencies: DataAPI<D>['getDependencies'],
+	currentWorkingDirectory: string,
 ): API<D> => {
 	const pathAPI: PathAPI = {
 		getDirname: (path) => platformPath.dirname(path),
 		getBasename: (path) => platformPath.basename(path),
 		joinPaths: (...paths) => platformPath.join(...paths),
+		currentWorkingDirectory,
 	};
 
 	const dataAPI: DataAPI<D> = {
