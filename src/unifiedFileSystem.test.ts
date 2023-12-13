@@ -3,6 +3,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Volume, createFsFromVolume } from 'memfs';
+import { describe, it } from "vitest";
 import { FileSystemManager } from './fileSystemManager.js';
 import { UnifiedFileSystem } from './unifiedFileSystem.js';
 import { deepStrictEqual } from 'node:assert';
