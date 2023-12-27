@@ -1,9 +1,6 @@
-import { FSOption } from 'path-scurry';
 import * as platformPath from 'node:path';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
-import { glob } from 'glob';
-import { ExternalFileCommand } from './externalFileCommands.js';
-import { FileSystemManager } from './fileSystemManager.js';
+import type { ExternalFileCommand } from './externalFileCommands.js';
 
 interface UnifiedFile {
 	readonly kind: 'file';
@@ -20,6 +17,13 @@ export type PathHashDigest = string & {
 	__PathHashDigest: '__PathHashDigest';
 };
 
+export interface GlobArguments {
+	readonly includePatterns: ReadonlyArray<string>;
+	readonly excludePatterns: ReadonlyArray<string>;
+	readonly absolute: true;
+	readonly currentWorkingDirectory: string;
+}
+
 export class UnifiedFileSystem {
 	private __directoryFiles = new LeftRightHashSetManager<
 		PathHashDigest,
@@ -29,8 +33,10 @@ export class UnifiedFileSystem {
 	private __changes = new Map<PathHashDigest, string | null>();
 
 	public constructor(
-		private __realFileSystem: FSOption,
-		private __fileSystemManager: FileSystemManager,
+		private __glob: (
+			globArguments: GlobArguments,
+		) => Promise<ReadonlyArray<string>>,
+		private __getUnifiedEntry: (path: string) => Promise<UnifiedEntry>,
 		private __buildPathHashDigest: (path: string) => PathHashDigest,
 	) {}
 
@@ -53,21 +59,15 @@ export class UnifiedFileSystem {
 			this.__buildPathHashDigest(directoryPath);
 
 		if (!this.__entries.has(directoryPathHashDigest)) {
-			const stats =
-				await this.__fileSystemManager.promisifiedStat(directoryPath);
+			const unifiedEntry = await this.__getUnifiedEntry(directoryPath);
 
-			if (!stats.isDirectory()) {
+			if (unifiedEntry.kind !== 'directory') {
 				return null;
 			}
 
-			const unifiedDirectory: UnifiedDirectory = {
-				kind: 'directory',
-				path: directoryPath,
-			};
+			this.__entries.set(directoryPathHashDigest, unifiedEntry);
 
-			this.__entries.set(directoryPathHashDigest, unifiedDirectory);
-
-			return unifiedDirectory;
+			return unifiedEntry;
 		}
 
 		return this.__entries.get(directoryPathHashDigest) ?? null;
@@ -79,21 +79,15 @@ export class UnifiedFileSystem {
 		const filePathHashDigest = this.__buildPathHashDigest(filePath);
 
 		if (!this.__entries.has(filePathHashDigest)) {
-			const stats =
-				await this.__fileSystemManager.promisifiedStat(filePath);
+			const unifiedEntry = await this.__getUnifiedEntry(filePath);
 
-			if (!stats.isFile()) {
+			if (unifiedEntry.kind !== 'file') {
 				return null;
 			}
 
-			const unifiedFile: UnifiedFile = {
-				kind: 'file',
-				path: filePath,
-			};
+			this.__entries.set(filePathHashDigest, unifiedEntry);
 
-			this.__entries.set(filePathHashDigest, unifiedFile);
-
-			return unifiedFile;
+			return unifiedEntry;
 		}
 
 		return this.__entries.get(filePathHashDigest) ?? null;
@@ -208,11 +202,11 @@ export class UnifiedFileSystem {
 		includePatterns: readonly string[],
 		excludePatterns: readonly string[],
 	): Promise<readonly string[]> {
-		const paths = await glob(includePatterns.slice(), {
+		const paths = await this.__glob({
+			includePatterns: includePatterns.slice(),
+			excludePatterns: excludePatterns.slice(),
+			currentWorkingDirectory: directoryPath,
 			absolute: true,
-			cwd: directoryPath,
-			fs: this.__realFileSystem,
-			ignore: excludePatterns.slice(),
 		});
 
 		paths.forEach((path) => {
