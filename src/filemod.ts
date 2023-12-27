@@ -1,13 +1,13 @@
-import { API, DataAPI, DirectoryAPI, FileAPI } from './api.js';
-import { ExternalFileCommand } from './externalFileCommands.js';
-import {
+import type { API, DataAPI, DirectoryAPI, FileAPI } from './api.js';
+import type { ExternalFileCommand } from './externalFileCommands.js';
+import type {
 	Command,
 	DataCommand,
 	DirectoryCommand,
 	FileCommand,
 	FinishCommand,
 } from './internalCommands.js';
-import { Options, RSU, State } from './options.js';
+import type { Options, RSU, State } from './options.js';
 
 type DistributedOmit<T, K> = T extends NonNullable<unknown>
 	? Pick<T, Exclude<keyof T, K>>
