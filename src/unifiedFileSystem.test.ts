@@ -10,6 +10,7 @@ import { deepStrictEqual } from 'node:assert';
 import { FSOption, GlobOptionsWithFileTypesUnset, glob } from 'glob';
 
 import { createHash } from 'crypto';
+import { join } from 'node:path';
 
 export const buildHashDigest = (data: string) =>
 	createHash('ripemd160').update(data).digest('base64url');
@@ -63,10 +64,52 @@ describe('unifiedFileSystem', function () {
 			} satisfies GlobOptionsWithFileTypesUnset);
 		};
 
+		const readDirectory = async (
+			path: string,
+		): Promise<ReadonlyArray<UnifiedEntry>> => {
+			const entries = await ifs.promises.readdir(path, {
+				withFileTypes: true,
+			});
+
+			return entries.map((entry) => {
+				if (typeof entry === 'string' || !('isDirectory' in entry)) {
+					throw new Error(
+						'Entry can neither be a string or a Buffer',
+					);
+				}
+
+				if (entry.isDirectory()) {
+					return {
+						kind: 'directory' as const,
+						path: join(path, entry.name.toString()),
+					};
+				}
+
+				if (entry.isFile()) {
+					return {
+						kind: 'file' as const,
+						path: join(path, entry.name.toString()),
+					};
+				}
+
+				throw new Error('The entry is neither directory not file');
+			});
+		};
+
+		const readFile = async (path: string): Promise<string> => {
+			const data = await ifs.promises.readFile(path, {
+				encoding: 'utf8',
+			});
+
+			return data.toString();
+		};
+
 		const unifiedFileSystem = new UnifiedFileSystem(
 			buildPathHashDigest,
 			getUnifiedEntry,
 			globWrapper,
+			readDirectory,
+			readFile,
 		);
 
 		const filePaths = await unifiedFileSystem.getFilePaths(
