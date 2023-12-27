@@ -1,6 +1,5 @@
 import { FSOption } from 'path-scurry';
 import * as platformPath from 'node:path';
-import { buildHashDigest } from './buildHash.js';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
 import { glob } from 'glob';
 import { ExternalFileCommand } from './externalFileCommands.js';
@@ -17,12 +16,9 @@ interface UnifiedDirectory {
 }
 
 type UnifiedEntry = UnifiedFile | UnifiedDirectory;
-type PathHashDigest = string & {
+export type PathHashDigest = string & {
 	__PathHashDigest: '__PathHashDigest';
 };
-
-const buildPathHashDigest = (path: string): PathHashDigest =>
-	buildHashDigest(path) as PathHashDigest;
 
 export class UnifiedFileSystem {
 	private __directoryFiles = new LeftRightHashSetManager<
@@ -35,6 +31,7 @@ export class UnifiedFileSystem {
 	public constructor(
 		private __realFileSystem: FSOption,
 		private __fileSystemManager: FileSystemManager,
+		private __buildPathHashDigest: (path: string) => PathHashDigest,
 	) {}
 
 	public async upsertUnifiedEntry(
@@ -52,7 +49,8 @@ export class UnifiedFileSystem {
 	public async upsertUnifiedDirectory(
 		directoryPath: string,
 	): Promise<UnifiedEntry | null> {
-		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+		const directoryPathHashDigest =
+			this.__buildPathHashDigest(directoryPath);
 
 		if (!this.__entries.has(directoryPathHashDigest)) {
 			const stats =
@@ -78,7 +76,7 @@ export class UnifiedFileSystem {
 	public async upsertUnifiedFile(
 		filePath: string,
 	): Promise<UnifiedEntry | null> {
-		const filePathHashDigest = buildPathHashDigest(filePath);
+		const filePathHashDigest = this.__buildPathHashDigest(filePath);
 
 		if (!this.__entries.has(filePathHashDigest)) {
 			const stats =
@@ -104,7 +102,8 @@ export class UnifiedFileSystem {
 	public async readDirectory(
 		directoryPath: string,
 	): Promise<readonly string[]> {
-		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+		const directoryPathHashDigest =
+			this.__buildPathHashDigest(directoryPath);
 
 		const dirents = await this.__fileSystemManager.promisifiedReaddir(
 			directoryPath,
@@ -115,7 +114,7 @@ export class UnifiedFileSystem {
 
 		dirents.forEach((entry) => {
 			const entryPath = platformPath.join(directoryPath, entry.name);
-			const pathHashDigest = buildPathHashDigest(entryPath);
+			const pathHashDigest = this.__buildPathHashDigest(entryPath);
 
 			if (entry.isDirectory()) {
 				const unifiedEntry: UnifiedEntry = {
@@ -164,7 +163,7 @@ export class UnifiedFileSystem {
 	}
 
 	public async readFile(path: string): Promise<string> {
-		const pathHashDigest = buildPathHashDigest(path);
+		const pathHashDigest = this.__buildPathHashDigest(path);
 
 		const upsertedData = this.__changes.get(pathHashDigest);
 
@@ -189,7 +188,8 @@ export class UnifiedFileSystem {
 	}
 
 	public isDirectory(directoryPath: string): boolean {
-		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+		const directoryPathHashDigest =
+			this.__buildPathHashDigest(directoryPath);
 
 		return (
 			this.__entries.get(directoryPathHashDigest)?.kind === 'directory'
@@ -197,7 +197,8 @@ export class UnifiedFileSystem {
 	}
 
 	public exists(directoryPath: string): boolean {
-		const directoryPathHashDigest = buildPathHashDigest(directoryPath);
+		const directoryPathHashDigest =
+			this.__buildPathHashDigest(directoryPath);
 
 		return this.__entries.has(directoryPathHashDigest);
 	}
@@ -220,7 +221,7 @@ export class UnifiedFileSystem {
 				path,
 			};
 
-			const pathHashDigest = buildPathHashDigest(path);
+			const pathHashDigest = this.__buildPathHashDigest(path);
 
 			this.__entries.set(pathHashDigest, unifiedFile);
 		});
@@ -229,7 +230,7 @@ export class UnifiedFileSystem {
 	}
 
 	public deleteFile(filePath: string): void {
-		const pathHashDigest = buildPathHashDigest(filePath);
+		const pathHashDigest = this.__buildPathHashDigest(filePath);
 
 		const unifiedFile: UnifiedFile = {
 			kind: 'file',
@@ -241,7 +242,7 @@ export class UnifiedFileSystem {
 	}
 
 	public upsertData(filePath: string, data: string): void {
-		const pathHashDigest = buildPathHashDigest(filePath);
+		const pathHashDigest = this.__buildPathHashDigest(filePath);
 
 		const unifiedFile: UnifiedFile = {
 			kind: 'file',

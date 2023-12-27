@@ -5,8 +5,13 @@
 import { Volume, createFsFromVolume } from 'memfs';
 import { describe, it } from 'vitest';
 import { FileSystemManager } from './fileSystemManager.js';
-import { UnifiedFileSystem } from './unifiedFileSystem.js';
+import { PathHashDigest, UnifiedFileSystem } from './unifiedFileSystem.js';
 import { deepStrictEqual } from 'node:assert';
+
+import { createHash } from 'crypto';
+
+export const buildHashDigest = (data: string) =>
+	createHash('ripemd160').update(data).digest('base64url');
 
 describe('unifiedFileSystem', function () {
 	it('should get proper file paths', async function () {
@@ -27,6 +32,7 @@ describe('unifiedFileSystem', function () {
 		const unifiedFileSystem = new UnifiedFileSystem(
 			createFsFromVolume(volume) as any,
 			fileSystemManager,
+			(path) => buildHashDigest(path) as PathHashDigest,
 		);
 
 		const filePaths = await unifiedFileSystem.getFilePaths(
