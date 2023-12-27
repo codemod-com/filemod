@@ -1,4 +1,4 @@
-import { Options } from './options.js';
+import type { Options } from './options.js';
 
 export interface UpsertFileCommand {
 	readonly kind: 'upsertFile';

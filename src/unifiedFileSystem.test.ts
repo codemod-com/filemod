@@ -4,7 +4,6 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Volume, createFsFromVolume } from 'memfs';
 import { describe, it } from 'vitest';
-import { FileSystemManager } from './fileSystemManager.js';
 import { PathHashDigest, UnifiedFileSystem } from './unifiedFileSystem.js';
 import { deepStrictEqual } from 'node:assert';
 
@@ -22,12 +21,6 @@ describe('unifiedFileSystem', function () {
 			'/opt/project/README.md': '',
 			'/opt/project/README.notmd': '',
 		});
-
-		const fileSystemManager = new FileSystemManager(
-			volume.promises.readdir as any,
-			volume.promises.readFile as any,
-			volume.promises.stat as any,
-		);
 
 		const unifiedFileSystem = new UnifiedFileSystem(
 			createFsFromVolume(volume) as any,

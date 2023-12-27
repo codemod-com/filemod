@@ -32,15 +32,15 @@ export class UnifiedFileSystem {
 	private __changes = new Map<PathHashDigest, string | null>();
 
 	public constructor(
+		private __buildPathHashDigest: (path: string) => PathHashDigest,
+		private __getUnifiedEntry: (path: string) => Promise<UnifiedEntry>,
 		private __glob: (
 			globArguments: GlobArguments,
 		) => Promise<ReadonlyArray<string>>,
-		private __getUnifiedEntry: (path: string) => Promise<UnifiedEntry>,
 		private __readDirectory: (
 			path: string,
 		) => Promise<ReadonlyArray<UnifiedEntry>>,
 		private __readFile: (path: string) => Promise<string>,
-		private __buildPathHashDigest: (path: string) => PathHashDigest,
 	) {}
 
 	public async upsertUnifiedEntry(
