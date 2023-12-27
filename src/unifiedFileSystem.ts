@@ -20,7 +20,6 @@ export type PathHashDigest = string & {
 export interface GlobArguments {
 	readonly includePatterns: ReadonlyArray<string>;
 	readonly excludePatterns: ReadonlyArray<string>;
-	readonly absolute: true;
 	readonly currentWorkingDirectory: string;
 }
 
@@ -191,7 +190,6 @@ export class UnifiedFileSystem {
 			includePatterns,
 			excludePatterns,
 			currentWorkingDirectory: directoryPath,
-			absolute: true,
 		});
 
 		paths.forEach((path) => {

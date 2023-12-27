@@ -7,7 +7,7 @@ import {
 	UnifiedFileSystem,
 } from './unifiedFileSystem.js';
 import { deepStrictEqual } from 'node:assert';
-import { glob } from 'glob';
+import { FSOption, GlobOptionsWithFileTypesUnset, glob } from 'glob';
 
 import { createHash } from 'crypto';
 
@@ -51,15 +51,16 @@ describe('unifiedFileSystem', function () {
 		const buildPathHashDigest = (path: string) =>
 			buildHashDigest(path) as PathHashDigest;
 
+		// @ts-expect-error type mismatch
+		const fsOption: FSOption = ifs;
+
 		const globWrapper = (globArguments: GlobArguments) => {
 			return glob(globArguments.includePatterns.slice(), {
-				absolute: globArguments.absolute,
+				absolute: true,
 				cwd: globArguments.currentWorkingDirectory,
 				ignore: globArguments.excludePatterns.slice(),
-				// @ts-expect-error type mismatch
-				fs: ifs,
-				withFileTypes: false,
-			});
+				fs: fsOption,
+			} satisfies GlobOptionsWithFileTypesUnset);
 		};
 
 		const unifiedFileSystem = new UnifiedFileSystem(
