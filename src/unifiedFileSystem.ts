@@ -1,17 +1,18 @@
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
 import type { ExternalFileCommand } from './externalFileCommands.js';
 
-interface UnifiedFile {
+export interface UnifiedFile {
 	readonly kind: 'file';
 	readonly path: string;
 }
 
-interface UnifiedDirectory {
+export interface UnifiedDirectory {
 	readonly kind: 'directory';
 	readonly path: string;
 }
 
-type UnifiedEntry = UnifiedFile | UnifiedDirectory;
+export type UnifiedEntry = UnifiedFile | UnifiedDirectory;
+
 export type PathHashDigest = string & {
 	__PathHashDigest: '__PathHashDigest';
 };
@@ -187,8 +188,8 @@ export class UnifiedFileSystem {
 		excludePatterns: readonly string[],
 	): Promise<readonly string[]> {
 		const paths = await this.__glob({
-			includePatterns: includePatterns.slice(),
-			excludePatterns: excludePatterns.slice(),
+			includePatterns,
+			excludePatterns,
 			currentWorkingDirectory: directoryPath,
 			absolute: true,
 		});

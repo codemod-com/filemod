@@ -1,11 +1,13 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/unbound-method */
-/* eslint-disable @typescript-eslint/no-unsafe-argument */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { Volume, createFsFromVolume } from 'memfs';
 import { describe, it } from 'vitest';
-import { PathHashDigest, UnifiedFileSystem } from './unifiedFileSystem.js';
+import {
+	GlobArguments,
+	PathHashDigest,
+	UnifiedEntry,
+	UnifiedFileSystem,
+} from './unifiedFileSystem.js';
 import { deepStrictEqual } from 'node:assert';
+import { glob } from 'glob';
 
 import { createHash } from 'crypto';
 
@@ -22,10 +24,48 @@ describe('unifiedFileSystem', function () {
 			'/opt/project/README.notmd': '',
 		});
 
+		const ifs = createFsFromVolume(volume);
+
+		const getUnifiedEntry = async (path: string): Promise<UnifiedEntry> => {
+			const stat = await ifs.promises.stat(path);
+
+			if (stat.isDirectory()) {
+				return {
+					kind: 'directory',
+					path,
+				};
+			}
+
+			if (stat.isFile()) {
+				return {
+					kind: 'file',
+					path,
+				};
+			}
+
+			throw new Error(
+				`The entry ${path} is neither a directory nor a file`,
+			);
+		};
+
+		const buildPathHashDigest = (path: string) =>
+			buildHashDigest(path) as PathHashDigest;
+
+		const globWrapper = (globArguments: GlobArguments) => {
+			return glob(globArguments.includePatterns.slice(), {
+				absolute: globArguments.absolute,
+				cwd: globArguments.currentWorkingDirectory,
+				ignore: globArguments.excludePatterns.slice(),
+				// @ts-expect-error type mismatch
+				fs: ifs,
+				withFileTypes: false,
+			});
+		};
+
 		const unifiedFileSystem = new UnifiedFileSystem(
-			createFsFromVolume(volume) as any,
-			fileSystemManager,
-			(path) => buildHashDigest(path) as PathHashDigest,
+			buildPathHashDigest,
+			getUnifiedEntry,
+			globWrapper,
 		);
 
 		const filePaths = await unifiedFileSystem.getFilePaths(
