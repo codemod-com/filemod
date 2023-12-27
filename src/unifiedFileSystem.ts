@@ -1,4 +1,3 @@
-import * as platformPath from 'node:path';
 import { LeftRightHashSetManager } from './leftRightHashSetManager.js';
 import type { ExternalFileCommand } from './externalFileCommands.js';
 
@@ -37,6 +36,9 @@ export class UnifiedFileSystem {
 			globArguments: GlobArguments,
 		) => Promise<ReadonlyArray<string>>,
 		private __getUnifiedEntry: (path: string) => Promise<UnifiedEntry>,
+		private __readDirectory: (
+			path: string,
+		) => Promise<ReadonlyArray<UnifiedEntry>>,
 		private __buildPathHashDigest: (path: string) => PathHashDigest,
 	) {}
 
@@ -99,23 +101,14 @@ export class UnifiedFileSystem {
 		const directoryPathHashDigest =
 			this.__buildPathHashDigest(directoryPath);
 
-		const dirents = await this.__fileSystemManager.promisifiedReaddir(
-			directoryPath,
-			{
-				withFileTypes: true,
-			},
-		);
+		const unifiedEntries = await this.__readDirectory(directoryPath);
 
-		dirents.forEach((entry) => {
-			const entryPath = platformPath.join(directoryPath, entry.name);
-			const pathHashDigest = this.__buildPathHashDigest(entryPath);
+		unifiedEntries.forEach((unifiedEntry) => {
+			const pathHashDigest = this.__buildPathHashDigest(
+				unifiedEntry.path,
+			);
 
-			if (entry.isDirectory()) {
-				const unifiedEntry: UnifiedEntry = {
-					kind: 'directory',
-					path: entryPath,
-				};
-
+			if (unifiedEntry.kind === 'directory') {
 				// TODO check if it's not removed
 
 				this.__directoryFiles.upsert(
@@ -125,12 +118,7 @@ export class UnifiedFileSystem {
 				this.__entries.set(pathHashDigest, unifiedEntry);
 			}
 
-			if (entry.isFile()) {
-				const unifiedEntry: UnifiedEntry = {
-					kind: 'file',
-					path: entryPath,
-				};
-
+			if (unifiedEntry.kind === 'file') {
 				// TODO check if it's not removed
 
 				this.__directoryFiles.upsert(
