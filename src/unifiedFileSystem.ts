@@ -39,6 +39,7 @@ export class UnifiedFileSystem {
 		private __readDirectory: (
 			path: string,
 		) => Promise<ReadonlyArray<UnifiedEntry>>,
+		private __readFile: (path: string) => Promise<string>,
 		private __buildPathHashDigest: (path: string) => PathHashDigest,
 	) {}
 
@@ -151,12 +152,7 @@ export class UnifiedFileSystem {
 
 		if (upsertedData === undefined) {
 			try {
-				return await this.__fileSystemManager.promisifiedReadFile(
-					path,
-					{
-						encoding: 'utf8',
-					},
-				);
+				return await this.__readFile(path);
 			} catch (error) {
 				return '';
 			}
