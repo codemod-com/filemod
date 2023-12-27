@@ -1,6 +1,5 @@
-import * as platformPath from 'node:path';
-import { RSU } from './options.js';
-import { UnifiedFileSystem } from './unifiedFileSystem.js';
+import type { RSU } from './options.js';
+import type { UnifiedFileSystem } from './unifiedFileSystem.js';
 
 export interface PathAPI {
 	readonly getDirname: (path: string) => string;
@@ -35,15 +34,8 @@ export interface API<D extends RSU> {
 export const buildApi = <D extends RSU>(
 	unifiedFileSystem: UnifiedFileSystem,
 	getDependencies: DataAPI<D>['getDependencies'],
-	currentWorkingDirectory: string,
+	pathAPI: PathAPI,
 ): API<D> => {
-	const pathAPI: PathAPI = {
-		getDirname: (path) => platformPath.dirname(path),
-		getBasename: (path) => platformPath.basename(path),
-		joinPaths: (...paths) => platformPath.join(...paths),
-		currentWorkingDirectory,
-	};
-
 	const dataAPI: DataAPI<D> = {
 		getDependencies,
 		...pathAPI,
