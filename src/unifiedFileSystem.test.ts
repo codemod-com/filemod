@@ -52,8 +52,7 @@ describe('unifiedFileSystem', function () {
 		const buildPathHashDigest = (path: string) =>
 			buildHashDigest(path) as PathHashDigest;
 
-		// @ts-expect-error type mismatch
-		const fileSystemAdapter: FileSystemAdapter = ifs;
+		const fileSystemAdapter = ifs as Partial<FileSystemAdapter>;
 
 		const globWrapper = (globArguments: GlobArguments) => {
 			return glob(globArguments.includePatterns.slice(), {
