@@ -192,16 +192,21 @@ export class UnifiedFileSystem {
 			currentWorkingDirectory: directoryPath,
 		});
 
-		paths.forEach((path) => {
-			const unifiedFile: UnifiedFile = {
-				kind: 'file',
-				path,
-			};
+		paths
+			// fast-glob has hardcoded separator pathSegmentSeparator: '/', so for windows platform we need to replace backslashes to forwardslashes
+			.map((path) =>
+				process.platform === 'win32' ? path.replace(/\//g, '\\') : path,
+			)
+			.forEach((path) => {
+				const unifiedFile: UnifiedFile = {
+					kind: 'file',
+					path,
+				};
 
-			const pathHashDigest = this.__buildPathHashDigest(path);
+				const pathHashDigest = this.__buildPathHashDigest(path);
 
-			this.__entries.set(pathHashDigest, unifiedFile);
-		});
+				this.__entries.set(pathHashDigest, unifiedFile);
+			});
 
 		return paths;
 	}
