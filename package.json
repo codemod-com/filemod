@@ -1,6 +1,6 @@
 {
 	"name": "@intuita-inc/filemod",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"description": "The filemod by Intuita",
 	"type": "module",
 	"exports": "./dist/index.js",
